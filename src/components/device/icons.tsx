@@ -1,0 +1,72 @@
+import {
+  ArrowUp,
+  BellOff,
+  Calendar,
+  Camera,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Ellipsis,
+  Folder,
+  Heart,
+  House,
+  Image as ImageIcon,
+  Info,
+  Lock,
+  Mail,
+  Map,
+  MessageCircle,
+  Mic,
+  Music,
+  Phone,
+  Plus,
+  Search,
+  Settings,
+  Share,
+  SquarePen,
+  Star,
+  Trash2,
+  User,
+  Video,
+  type LucideIcon,
+} from "lucide-react";
+
+export const ICONS: Record<string, LucideIcon> = {
+  home: House,
+  search: Search,
+  settings: Settings,
+  compose: SquarePen,
+  plus: Plus,
+  "arrow-up": ArrowUp,
+  video: Video,
+  phone: Phone,
+  info: Info,
+  camera: Camera,
+  mic: Mic,
+  heart: Heart,
+  share: Share,
+  "bell-off": BellOff,
+  "chevron-left": ChevronLeft,
+  "chevron-right": ChevronRight,
+  message: MessageCircle,
+  user: User,
+  star: Star,
+  trash: Trash2,
+  folder: Folder,
+  mail: Mail,
+  music: Music,
+  map: Map,
+  calendar: Calendar,
+  clock: Clock,
+  photo: ImageIcon,
+  lock: Lock,
+  more: Ellipsis,
+};
+
+export const ICON_NAMES = Object.keys(ICONS);
+
+export function Icon({ name, size, color, strokeWidth = 2 }: { name?: string; size: number; color?: string; strokeWidth?: number }) {
+  const C = name ? ICONS[name] : undefined;
+  if (!C) return null;
+  return <C size={size} color={color} strokeWidth={strokeWidth} />;
+}
