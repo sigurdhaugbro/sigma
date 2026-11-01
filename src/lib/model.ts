@@ -3,7 +3,10 @@
  * re-imported, and later compiled into a PWA or native (SwiftUI) app.
  */
 
-export type DeviceKind = "iphone" | "ipad" | "mac" | "canvas";
+export type DeviceKind = "iphone" | "ipad" | "mac" | "canvas" | "slide";
+
+/** Prototype = device-framed app UI. Deck = ordered 16:9 slides. Missing kind is a prototype. */
+export type ProjectKind = "prototype" | "deck";
 
 export type ElementType =
   | "text"
@@ -159,6 +162,8 @@ export interface Screen {
 export interface Project {
   id: string;
   version: 1;
+  /** Defaults to "prototype" when omitted (older files). */
+  kind?: ProjectKind;
   name: string;
   startScreenId: string;
   screens: Screen[];
@@ -174,10 +179,17 @@ export const DEVICES: Record<
   ipad: { label: "iPad 11\"", width: 834, height: 1194, radius: 18, bezel: 22 },
   mac: { label: "Mac window", width: 1200, height: 760, radius: 10, bezel: 0 },
   canvas: { label: "Canvas", width: 1200, height: 800, radius: 0, bezel: 0 },
+  slide: { label: "Slide", width: 1920, height: 1080, radius: 0, bezel: 0 },
 };
 
+export const SLIDE_INSERT_TYPES = ["text", "rect", "image"] as const satisfies readonly ElementType[];
+
+export function isDeck(project: Pick<Project, "kind">): boolean {
+  return project.kind === "deck";
+}
+
 /** iPhone / iPad frames get a bezel, status bar, and home indicator. */
-export function hasDeviceChrome(device: DeviceKind) {
+export function hasDeviceChrome(device: DeviceKind): boolean {
   return device === "iphone" || device === "ipad";
 }
 
@@ -351,7 +363,7 @@ export function createScreen(device: DeviceKind, overrides: Partial<Screen> = {}
   const dev = DEVICES[device];
   return {
     id: uid("scr_"),
-    name: device === "mac" ? "Mac Window" : device === "canvas" ? "Canvas" : "Screen",
+    name: device === "slide" ? "Slide" : device === "mac" ? "Mac Window" : device === "canvas" ? "Canvas" : "Screen",
     device,
     x: 0,
     y: 0,
@@ -369,9 +381,51 @@ export function createProject(name = "Untitled project"): Project {
   return {
     id: uid("prj_"),
     version: 1,
+    kind: "prototype",
     name,
     startScreenId: screen.id,
     screens: [screen],
+    variables: [],
+    updatedAt: Date.now(),
+  };
+}
+
+function starterSlideElements(): Element[] {
+  return [
+    createElement("text", {
+      name: "Title",
+      text: "Untitled presentation",
+      x: 160,
+      y: 400,
+      width: 1600,
+      height: 100,
+      fontSize: 72,
+      fontWeight: 700,
+      textColor: "#111111",
+    }),
+    createElement("text", {
+      name: "Subtitle",
+      text: "Click to edit",
+      x: 160,
+      y: 520,
+      width: 1600,
+      height: 48,
+      fontSize: 28,
+      fontWeight: 400,
+      textColor: "#6B6B70",
+    }),
+  ];
+}
+
+export function createDeck(name = "Untitled presentation"): Project {
+  const slide = createScreen("slide", { name: "Slide 1", elements: starterSlideElements() });
+  return {
+    id: uid("prj_"),
+    version: 1,
+    kind: "deck",
+    name,
+    startScreenId: slide.id,
+    screens: [slide],
     variables: [],
     updatedAt: Date.now(),
   };

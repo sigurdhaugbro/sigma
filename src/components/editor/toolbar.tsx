@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { ChevronDown, Circle, Clapperboard, Download, FilePlus2, Frame, Grid3x3, Magnet, Maximize2, Minus, Monitor, MousePointer2, Pencil, Play, Plus, Redo2, Smartphone, Sparkles, Square, Tablet, Trash2, Type, Undo2, Upload } from "lucide-react";
+import { ChevronDown, Circle, Clapperboard, Download, FilePlus2, Frame, Grid3x3, Magnet, Maximize2, Minus, Monitor, MousePointer2, Pencil, Play, Plus, Presentation, Redo2, Smartphone, Sparkles, Square, Tablet, Trash2, Type, Undo2, Upload } from "lucide-react";
 import { PlayOnIPhoneDialog } from "./play-on-iphone";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,8 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { createProject, type Project } from "@/lib/model";
-import { createSampleProject } from "@/lib/sample";
+import { createDeck, createProject, isDeck, type Project } from "@/lib/model";
+import { createSampleDeck, createSampleProject } from "@/lib/sample";
 import { deleteProject, downloadProject, listProjects, loadProject, readProjectFile, type ProjectSummary } from "@/lib/storage";
 import { useEditor, type EditorTool } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -57,6 +57,12 @@ export function Toolbar({ onPlay, onOpenProject, onFit }: { onPlay: () => void; 
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onOpenProject(createSampleProject())}>
               <Sparkles /> New from Messages sample
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onOpenProject(createDeck())}>
+              <Presentation /> New presentation
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onOpenProject(createSampleDeck())}>
+              <Presentation /> New from slides sample
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
@@ -135,25 +141,31 @@ export function Toolbar({ onPlay, onOpenProject, onFit }: { onPlay: () => void; 
       />
 
       <div className="mx-auto flex items-center gap-1">
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
-            <Plus /> <span className="hidden sm:inline">Screen</span>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => addScreen("iphone")}>
-              <Smartphone /> iPhone screen
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addScreen("ipad")}>
-              <Tablet /> iPad screen
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addScreen("mac")}>
-              <Monitor /> Mac window
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => addScreen("canvas")}>
-              <Frame /> Canvas
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isDeck(project) ? (
+          <Button variant="outline" size="sm" onClick={() => addScreen("slide")}>
+            <Plus /> <span className="hidden sm:inline">Slide</span>
+          </Button>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+              <Plus /> <span className="hidden sm:inline">Screen</span>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => addScreen("iphone")}>
+                <Smartphone /> iPhone screen
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addScreen("ipad")}>
+                <Tablet /> iPad screen
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addScreen("mac")}>
+                <Monitor /> Mac window
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => addScreen("canvas")}>
+                <Frame /> Canvas
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <div className="mx-1 flex items-center rounded-md border border-border/70 p-0.5">
           {TOOLS.map(({ id, label, icon: Icon, key }) => (
             <Button
@@ -197,13 +209,20 @@ export function Toolbar({ onPlay, onOpenProject, onFit }: { onPlay: () => void; 
         </Button>
       </div>
 
-      <Button size="sm" variant="outline" onClick={() => setIphoneOpen(true)} title="Play on iPhone">
-        <Smartphone /> <span className="hidden xl:inline">iPhone</span>
-      </Button>
-      <Button size="sm" onClick={onPlay} className="bg-sky-500 text-white hover:bg-sky-400" title="Play prototype (⌘Enter)">
+      {!isDeck(project) && (
+        <Button size="sm" variant="outline" onClick={() => setIphoneOpen(true)} title="Play on iPhone">
+          <Smartphone /> <span className="hidden xl:inline">iPhone</span>
+        </Button>
+      )}
+      <Button
+        size="sm"
+        onClick={onPlay}
+        className="bg-sky-500 text-white hover:bg-sky-400"
+        title={isDeck(project) ? "Present slideshow (⌘Enter)" : "Play prototype (⌘Enter)"}
+      >
         <Play className="fill-current" /> Present
       </Button>
-      <PlayOnIPhoneDialog open={iphoneOpen} onOpenChange={setIphoneOpen} project={project} screenId={screenId ?? undefined} />
+      {!isDeck(project) && <PlayOnIPhoneDialog open={iphoneOpen} onOpenChange={setIphoneOpen} project={project} screenId={screenId ?? undefined} />}
     </header>
   );
 }

@@ -2,6 +2,8 @@
 
 A Figma-style editor for recreating iPhone and Mac app UIs for film and TV sets. The screens do more than look right. In **Present** mode you can type into real text fields, tap buttons to move between screens with iOS-style transitions, flip toggles, and send chat messages that get scripted replies. **Play on iPhone** puts the same prototype on a real phone, edge to edge, so you can hold it on camera.
 
+**Slides** are a separate project kind: a 16:9 deck with no device chrome, edited in the same Sigma chrome, and presented as a fullscreen slideshow.
+
 ## Run it
 
 ```bash
@@ -37,8 +39,13 @@ Projects are stored in your browser's `localStorage`. The first time you open th
 - How it works: the editor sends the project JSON (with image data removed), the current selection and your instruction to `POST /api/ai`. That route forwards them to the provider using the key sent with the request; the key is never stored on the server. The model replies with structured operations (`addScreen`, `addElement`, `updateElement`, `addInteraction`, `setVariable`, …). Each operation is checked against a zod schema in `src/lib/ai/ops.ts`, and invalid ones are skipped and reported. The rest are applied as **one undo step**, and the chat lists exactly what changed.
 - The AI panel doesn't appear in Present mode.
 
+**Slides** (`Sigma menu → New presentation` or **New from slides sample**)
+- A deck is an ordered list of **Slide** frames (1920×1080, 16:9) with no iPhone/Mac chrome. Distinct from app prototypes and from the free drawing canvas.
+- Same editor chrome: insert text, rectangles, and images; add, duplicate, delete, and reorder slides from the left filmstrip or the properties panel.
+- **Present** (`/present?id=…&slide=…`) is a fullscreen slideshow — arrow keys, space, page keys, or click (left quarter previous, otherwise next). Esc exits. No editor chrome. Presenter notes are not in this slice.
+
 **Present mode** (`/play?id=…&screen=…`)
-- A full-screen device mockup with no editor UI. Everything on the screen is live.
+- A full-screen device mockup with no editor UI. Everything on the screen is live. Decks opened here use the slideshow instead.
 - An optional on-screen iOS keyboard whose keys type into the focused field. A physical keyboard works too.
 - Controls appear when you move the mouse and fade out on their own: exit (Esc), restart (Shift+R), device frame on/off (turn it off to fill the display edge to edge when filming a real device), keyboard on/off, hide cursor, and fullscreen.
 
@@ -54,8 +61,8 @@ Projects are stored in your browser's `localStorage`. The first time you open th
 A project is plain JSON (`src/lib/model.ts`):
 
 ```
-Project { id, version, name, startScreenId, variables[], screens[] }
-Screen  { id, name, device: iphone|ipad|mac|canvas, x, y, width, height, background, elements[] }
+Project { id, version, kind?: prototype|deck, name, startScreenId, variables[], screens[] }
+Screen  { id, name, device: iphone|ipad|mac|canvas|slide, x, y, width, height, background, elements[] }
 Element { id, type, name, x, y, width, height, fill, stroke?, strokeWidth?, points?, textColor, font…, text, showIf?, props{}, interactions[] }
 Interaction { trigger: tap|submit, action: navigate|back|toggleVariable|setVariable|sendMessage }
 ```

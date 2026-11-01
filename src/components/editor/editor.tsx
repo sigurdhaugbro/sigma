@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createProject } from "@/lib/model";
+import { createProject, isDeck } from "@/lib/model";
+import { applySlideNav, slideIndex } from "@/lib/slides";
 import { createSampleProject } from "@/lib/sample";
 import { currentProjectId, listProjects, loadProject, saveProject } from "@/lib/storage";
 import { useEditor } from "@/lib/store";
+import { DeckStage, fitSlide } from "@/components/slides/deck-stage";
 import { Canvas, fitView } from "./canvas";
 import { LeftPanel } from "./left-panel";
 import { RightPanel, type RightTab } from "./right-panel";
@@ -42,7 +44,12 @@ export function Editor() {
 
   useEffect(() => {
     if (project && needsFit && canvasRef.current) {
-      fitView(project, canvasRef.current);
+      if (isDeck(project)) {
+        const slide = project.screens.find((s) => s.id === useEditor.getState().screenId) ?? project.screens[0];
+        if (slide) fitSlide(slide, canvasRef.current);
+      } else {
+        fitView(project, canvasRef.current);
+      }
       setNeedsFit(false);
     }
   }, [project, needsFit]);
@@ -66,8 +73,9 @@ export function Editor() {
       const p = useEditor.getState().project;
       if (!p) return;
       saveProject(p);
-      const s = screenId ?? p.startScreenId;
-      router.push(`/play?id=${p.id}&screen=${s}`);
+      const selected = useEditor.getState().screenId;
+      const s = screenId ?? (isDeck(p) ? (selected ?? p.startScreenId) : p.startScreenId);
+      router.push(isDeck(p) ? `/present?id=${p.id}&slide=${s}` : `/play?id=${p.id}&screen=${s}`);
     },
     [router],
   );
@@ -115,7 +123,12 @@ export function Editor() {
         else if (s.elementIds.length) s.select(s.screenId, null);
         else s.select(null, null);
       } else if (e.shiftKey && (e.key === "!" || e.code === "Digit1")) {
-        if (s.project) fitView(s.project, canvasRef.current);
+        if (s.project) {
+          if (isDeck(s.project)) {
+            const slide = s.project.screens.find((x) => x.id === s.screenId) ?? s.project.screens[0];
+            if (slide) fitSlide(slide, canvasRef.current);
+          } else fitView(s.project, canvasRef.current);
+        }
       } else if (mod && e.key === "Enter") {
         e.preventDefault();
         play(s.screenId ?? undefined);
@@ -125,6 +138,13 @@ export function Editor() {
         const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
         const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
         s.nudgeSelection(dx, dy);
+      } else if (e.key.startsWith("Arrow") && s.project && isDeck(s.project) && !s.elementIds.length) {
+        e.preventDefault();
+        const nav = e.key === "ArrowRight" || e.key === "ArrowDown" ? "next" : e.key === "ArrowLeft" || e.key === "ArrowUp" ? "prev" : null;
+        if (!nav) return;
+        const i = applySlideNav(slideIndex(s.project.screens, s.screenId), s.project.screens.length, nav);
+        const next = s.project.screens[i];
+        if (next) s.select(next.id, null);
       } else if (!mod && !e.altKey) {
         const k = e.key.toLowerCase();
         if (k === "v") s.setTool("select");
@@ -154,20 +174,35 @@ export function Editor() {
 
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
-      <Toolbar onPlay={() => play()} onOpenProject={openProject} onFit={() => fitView(project, canvasRef.current)} />
+      <Toolbar
+        onPlay={() => play()}
+        onOpenProject={openProject}
+        onFit={() => {
+          if (isDeck(project)) {
+            const slide = project.screens.find((s) => s.id === useEditor.getState().screenId) ?? project.screens[0];
+            if (slide) fitSlide(slide, canvasRef.current);
+          } else fitView(project, canvasRef.current);
+        }}
+      />
       <div className="flex min-h-0 flex-1">
         <div className="hidden md:flex">
           <LeftPanel />
         </div>
         <main className="relative min-w-0 flex-1">
-          <Canvas containerRef={canvasRef} spaceDown={spaceDown} />
+          {isDeck(project) ? <DeckStage containerRef={canvasRef} spaceDown={spaceDown} /> : <Canvas containerRef={canvasRef} spaceDown={spaceDown} />}
         </main>
         <div className="hidden lg:flex">
           <RightPanel
             tab={rightTab}
             onTab={setRightTab}
             onPlay={play}
-            onFit={() => fitView(useEditor.getState().project!, canvasRef.current)}
+            onFit={() => {
+              const p = useEditor.getState().project!;
+              if (isDeck(p)) {
+                const slide = p.screens.find((s) => s.id === useEditor.getState().screenId) ?? p.screens[0];
+                if (slide) fitSlide(slide, canvasRef.current);
+              } else fitView(p, canvasRef.current);
+            }}
             aiFocusSignal={aiFocus}
           />
         </div>

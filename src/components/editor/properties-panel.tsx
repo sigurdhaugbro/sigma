@@ -26,6 +26,7 @@ import { Switch } from "@/components/ui/switch";
 import { ICON_NAMES } from "@/components/device/icons";
 import {
   DEVICES,
+  isDeck,
   type Action,
   type ChatMessage,
   type Element,
@@ -72,11 +73,12 @@ export function PropertiesPanel({ onPlay }: { onPlay: (screenId?: string) => voi
 
 function ProjectProps({ project }: { project: Project }) {
   const { mutate } = useEditor.getState();
+  const deck = isDeck(project);
   return (
     <>
-      <Section title="Project">
+      <Section title={deck ? "Presentation" : "Project"}>
         <TextField value={project.name} onChange={(v) => mutate((d) => void (d.name = v))} />
-        <Row label="Start">
+        <Row label={deck ? "Start slide" : "Start"}>
           <SelectField
             value={project.startScreenId}
             onChange={(v) => mutate((d) => void (d.startScreenId = v))}
@@ -84,9 +86,9 @@ function ProjectProps({ project }: { project: Project }) {
           />
         </Row>
       </Section>
-      <VariablesSection project={project} />
+      {!deck && <VariablesSection project={project} />}
       <div className="space-y-2 px-3 py-3 text-xs leading-relaxed text-muted-foreground">
-        <p>Select a screen or element on the canvas to edit it.</p>
+        <p>{deck ? "Select a slide or element to edit it." : "Select a screen or element on the canvas to edit it."}</p>
         <p>
           <b className="text-foreground">Pan</b> scroll or drag the background · <b className="text-foreground">Zoom</b> ⌘/Ctrl + scroll ·{" "}
           <b className="text-foreground">Fit</b> Shift+1
@@ -99,6 +101,11 @@ function ProjectProps({ project }: { project: Project }) {
           <b className="text-foreground">Draw</b> V P R O L T · <b className="text-foreground">Multi-select</b> Shift-click or drag ·{" "}
           <b className="text-foreground">Grid</b> in the toolbar
         </p>
+        {deck && (
+          <p>
+            <b className="text-foreground">Slides</b> ← → when nothing is selected · <b className="text-foreground">Present</b> ⌘Enter
+          </p>
+        )}
       </div>
       <GridSection />
     </>
@@ -199,16 +206,20 @@ function MessagesEditor({ value, onChange }: { value: ChatMessage[]; onChange: (
 /* ------------------------------ Screen ------------------------------ */
 
 function ScreenProps({ screen, project, onPlay }: { screen: Screen; project: Project; onPlay: (id?: string) => void }) {
-  const { updateScreen, mutate, duplicateSelection, deleteSelection } = useEditor.getState();
+  const { updateScreen, mutate, duplicateSelection, deleteSelection, moveSlide } = useEditor.getState();
   const set = (fn: (s: Screen) => void) => updateScreen(screen.id, fn);
+  const deck = isDeck(project) || screen.device === "slide";
+  const index = project.screens.findIndex((s) => s.id === screen.id);
   return (
     <>
-      <Section title={`Screen · ${DEVICES[screen.device].label}`}>
+      <Section title={deck ? `Slide · 16:9` : `Screen · ${DEVICES[screen.device].label}`}>
         <TextField value={screen.name} onChange={(v) => set((s) => void (s.name = v))} />
-        <Row>
-          <NumField label="X" value={screen.x} onChange={(v) => set((s) => void (s.x = v))} />
-          <NumField label="Y" value={screen.y} onChange={(v) => set((s) => void (s.y = v))} />
-        </Row>
+        {!deck && (
+          <Row>
+            <NumField label="X" value={screen.x} onChange={(v) => set((s) => void (s.x = v))} />
+            <NumField label="Y" value={screen.y} onChange={(v) => set((s) => void (s.y = v))} />
+          </Row>
+        )}
         <Row>
           <NumField label="W" min={50} value={screen.width} onChange={(v) => set((s) => void (s.width = v))} />
           <NumField label="H" min={50} value={screen.height} onChange={(v) => set((s) => void (s.height = v))} />
@@ -217,17 +228,27 @@ function ScreenProps({ screen, project, onPlay }: { screen: Screen; project: Pro
           <ColorField value={screen.background} onChange={(v) => set((s) => void (s.background = v))} />
         </Row>
       </Section>
-      <GridSection />
-      <Section title="Prototype">
+      {!deck && <GridSection />}
+      <Section title={deck ? "Deck" : "Prototype"}>
         <label className="flex items-center gap-2 text-xs">
           <Switch
             checked={project.startScreenId === screen.id}
             onCheckedChange={(c) => c && mutate((d) => void (d.startScreenId = screen.id))}
           />
-          Start screen
+          {deck ? "Start slide" : "Start screen"}
         </label>
+        {deck && (
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="flex-1" disabled={index <= 0} onClick={() => moveSlide(screen.id, "up")}>
+              <ChevronUp /> Earlier
+            </Button>
+            <Button size="sm" variant="outline" className="flex-1" disabled={index < 0 || index >= project.screens.length - 1} onClick={() => moveSlide(screen.id, "down")}>
+              <ChevronDown /> Later
+            </Button>
+          </div>
+        )}
         <Button size="sm" variant="secondary" onClick={() => onPlay(screen.id)}>
-          <Play /> Play from this screen
+          <Play /> {deck ? "Present from this slide" : "Play from this screen"}
         </Button>
       </Section>
       <Section title="Actions">
@@ -240,7 +261,7 @@ function ScreenProps({ screen, project, onPlay }: { screen: Screen; project: Pro
           </Button>
         </div>
       </Section>
-      <VariablesSection project={project} />
+      {!deck && <VariablesSection project={project} />}
     </>
   );
 }
@@ -455,7 +476,7 @@ function ElementProps({ el, project }: { el: Element; project: Project }) {
           <NumField label="W" min={1} value={el.width} onChange={(v) => set((e) => void (e.width = v))} />
           <NumField label="H" min={1} value={el.height} onChange={(v) => set((e) => void (e.height = v))} />
         </Row>
-        {el.type !== "statusbar" && (
+        {el.type !== "statusbar" && !isDeck(project) && (
           <label className="flex items-center gap-2 text-xs text-muted-foreground" title="Moves up when the on-screen keyboard opens">
             <Switch checked={!!p.keyboardAware} onCheckedChange={(c) => set((e) => void (e.props.keyboardAware = c))} />
             Keyboard-aware (moves above keyboard)

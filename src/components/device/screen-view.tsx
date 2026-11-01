@@ -38,14 +38,13 @@ export function ScreenView({
 }
 
 export function HardwareOverlays({ device }: { device: Screen["device"] }) {
+  if (!hasDeviceChrome(device)) return null;
   return (
     <>
       {device === "iphone" && (
         <div className="pointer-events-none absolute top-[11px] left-1/2 z-50 h-[37px] w-[125px] -translate-x-1/2 rounded-full bg-black" />
       )}
-      {hasDeviceChrome(device) && (
-        <div className="pointer-events-none absolute bottom-2 left-1/2 z-50 h-[5px] w-[134px] -translate-x-1/2 rounded-full bg-black/85" />
-      )}
+      <div className="pointer-events-none absolute bottom-2 left-1/2 z-50 h-[5px] w-[134px] -translate-x-1/2 rounded-full bg-black/85" />
     </>
   );
 }
