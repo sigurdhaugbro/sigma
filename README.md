@@ -16,10 +16,13 @@ Projects are stored in your browser's `localStorage`. The first time you open th
 
 **Editor** (`/`)
 - An infinite canvas. Scroll or drag the background to pan, use ⌘/Ctrl + scroll to zoom, and press Shift+1 to fit everything in view.
-- Device frames for iPhone (393×852), iPad, and Mac windows. Each frame is one screen. Drag a screen's label to move it, and double-click the label to play from that screen.
-- Element library: text, rectangle, image (upload), button (filled, tinted, or plain, with icons), text field (rounded, iMessage pill, or search), text area, iOS toggle, list row (avatar or icon tile, subtitle, detail, chevron), nav bar, tab bar, status bar, chat bubble, chat thread, and Mac title bar.
-- You can select, drag (hold Shift to lock the axis), resize from 8 handles, nudge with the arrow keys, duplicate (⌘D), delete (⌫), reorder layers, and undo/redo (⌘Z / ⇧⌘Z).
-- A layers panel, and a properties panel for position, size, fill, radius, opacity, text, font, alignment, and type-specific settings.
+- Device frames for iPhone (393×852), iPad, and Mac windows, plus a bezel-less **Canvas** artboard (any size) for illustration and storyboards. Each frame is one screen. Drag a screen's label to move it, and double-click the label to play from that screen.
+- Element library: text, rectangle, image (upload), button (filled, tinted, or plain, with icons), text field (rounded, iMessage pill, or search), text area, iOS toggle, list row (avatar or icon tile, subtitle, detail, chevron), nav bar, tab bar, status bar, chat bubble, chat thread, Mac title bar, plus drawing tools: pencil (freehand path), ellipse, and line.
+- Draw on any screen with V/P/R/O/L/T (select, pencil, rectangle, ellipse, line, text). Strokes are real vector paths in the project JSON (`points` are normalized 0–1 inside the element's box) so Present mode can show them.
+- You can select, Shift-click or drag a marquee to multi-select, drag (hold Shift to lock the axis), resize from 8 handles (the whole selection as a group), nudge with the arrow keys, copy/cut/paste (⌘C / ⌘X / ⌘V, paste offsets in place), duplicate (⌘D), delete (⌫), reorder layers, and undo/redo (⌘Z / ⇧⌘Z).
+- Align left/center/right/top/middle/bottom and distribute horizontally or vertically from the properties panel when multiple elements are selected.
+- Optional grid: toggle visible guides and snap, and set the grid size (toolbar or properties).
+- A layers panel, and a properties panel for position, size, fill, stroke, radius, opacity, text, font, alignment, and type-specific settings.
 
 **Variables and interactions**
 - Project variables can hold text, an on/off value, or a list of messages. Text fields and toggles bind to a variable. Any text can include `{{name}}`, `{{messages.last}}`, or `{{messages.count}}`.
@@ -52,8 +55,8 @@ A project is plain JSON (`src/lib/model.ts`):
 
 ```
 Project { id, version, name, startScreenId, variables[], screens[] }
-Screen  { id, name, device: iphone|ipad|mac, x, y, width, height, background, elements[] }
-Element { id, type, name, x, y, width, height, fill, textColor, font…, text, showIf?, props{}, interactions[] }
+Screen  { id, name, device: iphone|ipad|mac|canvas, x, y, width, height, background, elements[] }
+Element { id, type, name, x, y, width, height, fill, stroke?, strokeWidth?, points?, textColor, font…, text, showIf?, props{}, interactions[] }
 Interaction { trigger: tap|submit, action: navigate|back|toggleVariable|setVariable|sendMessage }
 ```
 

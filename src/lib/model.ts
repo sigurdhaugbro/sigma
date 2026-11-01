@@ -3,7 +3,7 @@
  * re-imported, and later compiled into a PWA or native (SwiftUI) app.
  */
 
-export type DeviceKind = "iphone" | "ipad" | "mac";
+export type DeviceKind = "iphone" | "ipad" | "mac" | "canvas";
 
 export type ElementType =
   | "text"
@@ -19,7 +19,16 @@ export type ElementType =
   | "statusbar"
   | "bubble"
   | "messagelist"
-  | "mactitlebar";
+  | "mactitlebar"
+  | "path"
+  | "ellipse"
+  | "line";
+
+/** Local-space point. For path/line, stored normalized 0–1 inside the element's box. */
+export interface Vec2 {
+  x: number;
+  y: number;
+}
 
 export type Transition = "push" | "modal" | "fade" | "none";
 
@@ -122,6 +131,11 @@ export interface Element {
   radius: number;
   opacity: number;
   text: string;
+  /** Stroke color. Absent on older projects; treat as transparent. */
+  stroke?: string;
+  strokeWidth?: number;
+  /** Normalized 0–1 points for path and line. */
+  points?: Vec2[];
   /** Variable name; element only renders when truthy. Prefix with ! to negate. */
   showIf?: string;
   hidden?: boolean;
@@ -159,7 +173,13 @@ export const DEVICES: Record<
   iphone: { label: "iPhone 15", width: 393, height: 852, radius: 55, bezel: 14 },
   ipad: { label: "iPad 11\"", width: 834, height: 1194, radius: 18, bezel: 22 },
   mac: { label: "Mac window", width: 1200, height: 760, radius: 10, bezel: 0 },
+  canvas: { label: "Canvas", width: 1200, height: 800, radius: 0, bezel: 0 },
 };
+
+/** iPhone / iPad frames get a bezel, status bar, and home indicator. */
+export function hasDeviceChrome(device: DeviceKind) {
+  return device === "iphone" || device === "ipad";
+}
 
 export const IOS_BLUE = "#0A84FF";
 export const IOS_GREEN = "#34C759";
@@ -275,6 +295,42 @@ export const ELEMENT_DEFAULTS: Record<ElementType, Defaults> = {
     textAlign: "center",
     props: { title: "Untitled" },
   },
+  path: {
+    name: "Path",
+    width: 180,
+    height: 90,
+    fill: "transparent",
+    stroke: "#111111",
+    strokeWidth: 2.5,
+    points: [
+      { x: 0, y: 0.7 },
+      { x: 0.2, y: 0.2 },
+      { x: 0.45, y: 0.85 },
+      { x: 0.7, y: 0.15 },
+      { x: 1, y: 0.55 },
+    ],
+  },
+  ellipse: {
+    name: "Ellipse",
+    width: 140,
+    height: 140,
+    fill: "#E5E5EA",
+    stroke: "#111111",
+    strokeWidth: 2,
+    radius: 999,
+  },
+  line: {
+    name: "Line",
+    width: 160,
+    height: 80,
+    fill: "transparent",
+    stroke: "#111111",
+    strokeWidth: 2,
+    points: [
+      { x: 0, y: 0 },
+      { x: 1, y: 1 },
+    ],
+  },
 };
 
 export function createElement(type: ElementType, overrides: Defaults = {}): Element {
@@ -295,7 +351,7 @@ export function createScreen(device: DeviceKind, overrides: Partial<Screen> = {}
   const dev = DEVICES[device];
   return {
     id: uid("scr_"),
-    name: device === "mac" ? "Mac Window" : "Screen",
+    name: device === "mac" ? "Mac Window" : device === "canvas" ? "Canvas" : "Screen",
     device,
     x: 0,
     y: 0,

@@ -3,6 +3,7 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, ImageIcon, Search } from "lucide-react";
 import { IOS_BLUE, type ChatMessage, type Element } from "@/lib/model";
+import { fillOf, smoothPathD, strokeOf, strokeWidthOf } from "@/lib/draw";
 import { isVisible, resolveText } from "@/lib/runtime";
 import { Icon } from "./icons";
 import { useRuntime } from "./runtime-context";
@@ -72,6 +73,11 @@ function Body({ el }: { el: Element }) {
       return <MessageListEl el={el} />;
     case "mactitlebar":
       return <MacTitleBarEl el={el} />;
+    case "path":
+    case "line":
+      return <PathEl el={el} />;
+    case "ellipse":
+      return <EllipseEl el={el} />;
   }
 }
 
@@ -90,14 +96,76 @@ function TextEl({ el }: { el: Element }) {
 
 function RectEl({ el }: { el: Element }) {
   const rt = useRuntime();
+  const sw = strokeWidthOf(el);
+  const stroke = strokeOf(el);
   return (
     <div
       className="flex h-full w-full items-center justify-center overflow-hidden"
-      style={{ ...textStyle(el), background: el.fill, borderRadius: el.radius }}
+      style={{
+        ...textStyle(el),
+        background: el.fill,
+        borderRadius: el.radius,
+        boxSizing: "border-box",
+        border: stroke && sw > 0 ? `${sw}px solid ${stroke}` : undefined,
+      }}
       onClick={rt.live && el.interactions.length ? () => rt.fire(el, "tap") : undefined}
     >
       {el.text ? resolveText(el.text, rt.vars) : null}
     </div>
+  );
+}
+
+function svgTap(el: Element, live: boolean, fire: (el: Element, t: "tap") => void) {
+  return live && el.interactions.length ? () => fire(el, "tap") : undefined;
+}
+
+function PathEl({ el }: { el: Element }) {
+  const rt = useRuntime();
+  const d = smoothPathD(el.points, el.width, el.height);
+  const sw = Math.max(1, strokeWidthOf(el) || 2);
+  return (
+    <svg
+      className="h-full w-full overflow-visible"
+      viewBox={`0 0 ${Math.max(1, el.width)} ${Math.max(1, el.height)}`}
+      preserveAspectRatio="none"
+      onClick={svgTap(el, rt.live, rt.fire)}
+    >
+      <path
+        d={d}
+        fill={el.type === "path" ? fillOf(el) : "none"}
+        stroke={strokeOf(el) || "#111111"}
+        strokeWidth={sw}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+function EllipseEl({ el }: { el: Element }) {
+  const rt = useRuntime();
+  const sw = strokeWidthOf(el);
+  const stroke = strokeOf(el);
+  const w = Math.max(1, el.width);
+  const h = Math.max(1, el.height);
+  return (
+    <svg
+      className="h-full w-full overflow-visible"
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+      onClick={svgTap(el, rt.live, rt.fire)}
+    >
+      <ellipse
+        cx={w / 2}
+        cy={h / 2}
+        rx={Math.max(0.5, w / 2 - sw / 2)}
+        ry={Math.max(0.5, h / 2 - sw / 2)}
+        fill={fillOf(el)}
+        stroke={stroke || "none"}
+        strokeWidth={sw}
+      />
+    </svg>
   );
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { DEVICES, type Screen } from "@/lib/model";
+import { DEVICES, hasDeviceChrome, type Screen } from "@/lib/model";
 import { ElementView } from "./element-view";
 
 /** The screen surface: background, elements, and hardware overlays (Dynamic Island, home indicator). */
@@ -43,7 +43,7 @@ export function HardwareOverlays({ device }: { device: Screen["device"] }) {
       {device === "iphone" && (
         <div className="pointer-events-none absolute top-[11px] left-1/2 z-50 h-[37px] w-[125px] -translate-x-1/2 rounded-full bg-black" />
       )}
-      {device !== "mac" && (
+      {hasDeviceChrome(device) && (
         <div className="pointer-events-none absolute bottom-2 left-1/2 z-50 h-[5px] w-[134px] -translate-x-1/2 rounded-full bg-black/85" />
       )}
     </>

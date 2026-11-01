@@ -47,6 +47,14 @@ describe("offline fallback", () => {
     expect(added.elements.map((e) => e.type)).toEqual(["statusbar", "navbar"]);
   });
 
+  it("adds a chrome-less canvas", () => {
+    const { project } = setup();
+    const out = run("add a canvas", { screenId: null, elementId: null }, project)!;
+    const added = out.draft.screens.at(-1)!;
+    expect(added.device).toBe("canvas");
+    expect(added.elements).toEqual([]);
+  });
+
   it("adds a screen linked from an existing button", () => {
     const { project, byName } = setup();
     const out = run("add a settings screen linked from the compose icon", { screenId: null, elementId: null }, project)!;

@@ -5,15 +5,19 @@ import {
   AppWindowMac,
   ChevronDown,
   ChevronRight,
+  Circle,
   Eye,
   EyeOff,
+  Frame,
   Image as ImageIcon,
   LayoutList,
   MessageSquare,
   MessagesSquare,
+  Minus,
   Monitor,
   Navigation,
   PanelBottom,
+  Pencil,
   Play,
   RectangleHorizontal,
   Signal,
@@ -46,17 +50,21 @@ const INSERT: { type: ElementType; label: string; icon: LucideIcon }[] = [
   { type: "bubble", label: "Chat bubble", icon: MessageSquare },
   { type: "messagelist", label: "Chat thread", icon: MessagesSquare },
   { type: "mactitlebar", label: "Mac title bar", icon: AppWindowMac },
+  { type: "path", label: "Path", icon: Pencil },
+  { type: "ellipse", label: "Ellipse", icon: Circle },
+  { type: "line", label: "Line", icon: Minus },
 ];
 
 export const TYPE_ICONS: Record<ElementType, LucideIcon> = Object.fromEntries(INSERT.map((i) => [i.type, i.icon])) as Record<ElementType, LucideIcon>;
 
-const DEVICE_ICONS: Record<DeviceKind, LucideIcon> = { iphone: Smartphone, ipad: Tablet, mac: Monitor };
+const DEVICE_ICONS: Record<DeviceKind, LucideIcon> = { iphone: Smartphone, ipad: Tablet, mac: Monitor, canvas: Frame };
 
 export function LeftPanel() {
   const project = useEditor((s) => s.project)!;
   const screenId = useEditor((s) => s.screenId);
   const elementId = useEditor((s) => s.elementId);
-  const { addElement, select, updateElement } = useEditor.getState();
+  const elementIds = useEditor((s) => s.elementIds);
+  const { addElement, select, toggleSelect, updateElement } = useEditor.getState();
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   return (
@@ -110,10 +118,10 @@ export function LeftPanel() {
                         key={el.id}
                         className={cn(
                           "group flex h-6 cursor-default items-center gap-1.5 rounded-md pr-1 pl-7 text-xs",
-                          elementId === el.id ? "bg-sky-500/25 text-sky-100" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          elementIds.includes(el.id) ? "bg-sky-500/25 text-sky-100" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                           el.hidden && "opacity-50",
                         )}
-                        onClick={() => select(s.id, el.id)}
+                        onClick={(e) => (e.shiftKey ? toggleSelect(s.id, el.id) : select(s.id, el.id))}
                       >
                         <TI className="size-3 shrink-0" />
                         <span className="truncate">{el.name}</span>

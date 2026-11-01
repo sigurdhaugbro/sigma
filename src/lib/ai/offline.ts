@@ -31,6 +31,9 @@ const TYPE_WORDS: [RegExp, ElementType][] = [
   [/chat thread|message list|thread/, "messagelist"],
   [/bubble/, "bubble"],
   [/title ?bar/, "mactitlebar"],
+  [/ellipse|circle|oval/, "ellipse"],
+  [/line|stroke/, "line"],
+  [/path|pencil|pen|scribble/, "path"],
   [/text|label|title|heading/, "text"],
 ];
 
@@ -83,14 +86,17 @@ export function offlinePlan(project: Project, sel: Selection, instruction: strin
   const ops: Operation[] = [];
 
   // Add a screen: "add a settings screen", "add a mac window called Mail"
-  const addScreen = p.match(/\badd (?:an? )?(?:new )?(?:(iphone|ipad|mac) )?(?:(.+?) )?(screen|window)\b/);
+  const addScreen = p.match(/\badd (?:an? )?(?:new )?(?:(iphone|ipad|mac|canvas) )?(?:(.+?) )?(screen|window|canvas)\b/);
   if (addScreen && !(addScreen[2] && TYPE_WORDS.some(([re]) => re.test(addScreen[2])))) {
-    const device = (addScreen[1] as "iphone" | "ipad" | "mac" | undefined) ?? (addScreen[3] === "window" ? "mac" : "iphone");
+    const device =
+      addScreen[1] === "canvas" || addScreen[3] === "canvas"
+        ? "canvas"
+        : ((addScreen[1] as "iphone" | "ipad" | "mac" | undefined) ?? (addScreen[3] === "window" ? "mac" : "iphone"));
     const rawName = quoted(text) ?? text.match(/(?:called|named)\s+(.+)$/i)?.[1] ?? addScreen[2];
-    const name = rawName ? rawName.replace(/\b(new|an?|the)\b/gi, "").trim().replace(/^\w/, (c) => c.toUpperCase()) : "New Screen";
-    ops.push({ op: "addScreen", id: "new", device, name: name || "New Screen" });
+    const name = rawName ? rawName.replace(/\b(new|an?|the)\b/gi, "").trim().replace(/^\w/, (c) => c.toUpperCase()) : device === "canvas" ? "Canvas" : "New Screen";
+    ops.push({ op: "addScreen", id: "new", device, name: name || (device === "canvas" ? "Canvas" : "New Screen") });
     if (device === "mac") ops.push({ op: "addElement", screenId: "new", type: "mactitlebar", props: { title: name } });
-    else {
+    else if (device !== "canvas") {
       ops.push({ op: "addElement", screenId: "new", type: "statusbar" });
       ops.push({ op: "addElement", screenId: "new", type: "navbar", props: { title: name, backLabel: "Back" } });
     }
