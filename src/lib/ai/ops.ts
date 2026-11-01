@@ -30,6 +30,9 @@ const ELEMENT_TYPES = [
   "bubble",
   "messagelist",
   "mactitlebar",
+  "path",
+  "ellipse",
+  "line",
 ] as const satisfies readonly ElementType[];
 
 const num = z.number().finite();
@@ -99,6 +102,9 @@ const ElementFieldsSchema = z
     radius: num.min(0),
     opacity: num.min(0).max(1),
     text: z.string(),
+    stroke: z.string(),
+    strokeWidth: num.min(0),
+    points: z.array(z.object({ x: num, y: num })),
     showIf: z.string().nullable(),
     hidden: z.boolean(),
     props: PropsSchema,
@@ -115,7 +121,7 @@ export const OperationSchema = z.discriminatedUnion("op", [
   z.object({
     op: z.literal("addScreen"),
     id: z.string().optional(),
-    device: z.enum(["iphone", "ipad", "mac"]).default("iphone"),
+    device: z.enum(["iphone", "ipad", "mac", "canvas"]).default("iphone"),
     name: z.string(),
     background: z.string().optional(),
     x: num.optional(),

@@ -6,6 +6,7 @@ export function createSampleProject(): Project {
   const chat = createScreen("iphone", { name: "Chat — Maya", x: 493, y: 0 });
   const details = createScreen("iphone", { name: "Contact Details", x: 986, y: 0, background: "#F2F2F7" });
   const notes = createScreen("mac", { name: "Notes (Mac)", x: 1579, y: 0 });
+  const board = createScreen("canvas", { name: "Storyboard", x: 0, y: 972, background: "#F7F4EE" });
 
   // ---------- Conversation list ----------
   list.elements.push(
@@ -289,13 +290,139 @@ export function createSampleProject(): Project {
     }),
   );
 
+  board.elements.push(
+    createElement("text", {
+      name: "Board title",
+      text: "Scene 14 — kitchen",
+      x: 48,
+      y: 36,
+      width: 520,
+      height: 40,
+      fontSize: 28,
+      fontWeight: 700,
+      textColor: "#1D1D1F",
+    }),
+    createElement("rect", {
+      name: "Panel 1",
+      x: 48,
+      y: 100,
+      width: 340,
+      height: 280,
+      fill: "#FFFFFF",
+      stroke: "#111111",
+      strokeWidth: 2,
+      radius: 8,
+    }),
+    createElement("rect", {
+      name: "Panel 2",
+      x: 428,
+      y: 100,
+      width: 340,
+      height: 280,
+      fill: "#FFFFFF",
+      stroke: "#111111",
+      strokeWidth: 2,
+      radius: 8,
+    }),
+    createElement("rect", {
+      name: "Panel 3",
+      x: 808,
+      y: 100,
+      width: 340,
+      height: 280,
+      fill: "#FFFFFF",
+      stroke: "#111111",
+      strokeWidth: 2,
+      radius: 8,
+    }),
+    createElement("ellipse", {
+      name: "Face",
+      x: 158,
+      y: 160,
+      width: 120,
+      height: 120,
+      fill: "#FFE08A",
+      stroke: "#111111",
+      strokeWidth: 3,
+    }),
+    createElement("path", {
+      name: "Smile",
+      x: 186,
+      y: 230,
+      width: 64,
+      height: 28,
+      fill: "transparent",
+      stroke: "#111111",
+      strokeWidth: 3,
+      points: [
+        { x: 0, y: 0.2 },
+        { x: 0.35, y: 0.9 },
+        { x: 0.65, y: 0.9 },
+        { x: 1, y: 0.2 },
+      ],
+    }),
+    createElement("text", { name: "Panel 1 label", text: "INT. KITCHEN – NIGHT", x: 64, y: 340, width: 308, height: 20, fontSize: 13, fontWeight: 600 }),
+    createElement("rect", {
+      name: "Phone",
+      x: 548,
+      y: 180,
+      width: 100,
+      height: 160,
+      fill: "#111111",
+      radius: 18,
+      stroke: "#111111",
+      strokeWidth: 2,
+    }),
+    createElement("rect", {
+      name: "Phone screen",
+      x: 558,
+      y: 198,
+      width: 80,
+      height: 124,
+      fill: "#0A84FF",
+      radius: 6,
+    }),
+    createElement("text", { name: "Panel 2 label", text: "Phone lights up", x: 444, y: 340, width: 308, height: 20, fontSize: 13, fontWeight: 600, textAlign: "center" }),
+    createElement("line", {
+      name: "Look line",
+      x: 860,
+      y: 180,
+      width: 220,
+      height: 80,
+      stroke: "#FF3B30",
+      strokeWidth: 3,
+      points: [
+        { x: 0, y: 1 },
+        { x: 1, y: 0 },
+      ],
+    }),
+    createElement("path", {
+      name: "Hand",
+      x: 900,
+      y: 220,
+      width: 160,
+      height: 90,
+      fill: "transparent",
+      stroke: "#111111",
+      strokeWidth: 3,
+      points: [
+        { x: 0, y: 0.8 },
+        { x: 0.25, y: 0.2 },
+        { x: 0.45, y: 0.7 },
+        { x: 0.7, y: 0.15 },
+        { x: 1, y: 0.55 },
+      ],
+    }),
+    createElement("text", { name: "Panel 3 label", text: "She reaches for it", x: 824, y: 340, width: 308, height: 20, fontSize: 13, fontWeight: 600, textAlign: "center" }),
+  );
+
   const now = Date.now();
   return {
     id: uid("prj_"),
     version: 1,
     name: "Sample — Messages",
     startScreenId: list.id,
-    screens: [list, chat, details, notes],
+    screens: [list, chat, details, notes, board],
     variables: [
       {
         name: "messages",

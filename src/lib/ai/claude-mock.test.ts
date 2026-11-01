@@ -143,7 +143,7 @@ describe("/api/ai with a mocked Claude", () => {
     expect(result.errors).toEqual(["updateElement: element does-not-exist not found"]);
     expect(result.addedScreens).toBe(1);
     expect(result.focus?.screenId).toBe(anna.id);
-    expect(project.screens).toHaveLength(4);
+    expect(project.screens).toHaveLength(5);
   });
 
   it("explains a rejected key", async () => {

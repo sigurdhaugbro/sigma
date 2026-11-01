@@ -1,6 +1,25 @@
 "use client";
 
-import { ArrowDownToLine, ArrowUpToLine, ChevronDown, ChevronUp, Copy, Play, Plus, Trash2, Upload, X } from "lucide-react";
+import {
+  AlignCenterHorizontal,
+  AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignHorizontalSpaceAround,
+  AlignStartHorizontal,
+  AlignStartVertical,
+  AlignVerticalSpaceAround,
+  ArrowDownToLine,
+  ArrowUpToLine,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Play,
+  Plus,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
@@ -17,6 +36,7 @@ import {
   uid,
 } from "@/lib/model";
 import { findElement, useEditor } from "@/lib/store";
+import { scaleInGroup, sharedValue, unionBox, type AlignEdge } from "@/lib/selection";
 import { ColorField, NumField, Row, Section, SelectField, TextField } from "./fields";
 import { TYPE_ICONS } from "./left-panel";
 
@@ -24,13 +44,19 @@ export function PropertiesPanel({ onPlay }: { onPlay: (screenId?: string) => voi
   const project = useEditor((s) => s.project)!;
   const screenId = useEditor((s) => s.screenId);
   const elementId = useEditor((s) => s.elementId);
+  const elementIds = useEditor((s) => s.elementIds);
   const found = elementId ? findElement(project, elementId) : null;
   const screen = project.screens.find((s) => s.id === screenId);
+  const selected = elementIds
+    .map((id) => findElement(project, id)?.el)
+    .filter((el): el is NonNullable<typeof el> => !!el);
 
   return (
     <div className="flex h-full flex-col">
       <ScrollArea className="min-h-0 flex-1">
-        {found ? (
+        {selected.length > 1 ? (
+          <GroupProps els={selected} />
+        ) : found ? (
           <ElementProps el={found.el} project={project} />
         ) : screen ? (
           <ScreenProps screen={screen} project={project} onPlay={onPlay} />
@@ -66,10 +92,15 @@ function ProjectProps({ project }: { project: Project }) {
           <b className="text-foreground">Fit</b> Shift+1
         </p>
         <p>
-          <b className="text-foreground">Duplicate</b> ⌘D · <b className="text-foreground">Delete</b> ⌫ · <b className="text-foreground">Undo</b> ⌘Z ·{" "}
-          <b className="text-foreground">Nudge</b> arrows
+          <b className="text-foreground">Duplicate</b> ⌘D · <b className="text-foreground">Copy/Paste</b> ⌘C / ⌘V / ⌘X ·{" "}
+          <b className="text-foreground">Delete</b> ⌫ · <b className="text-foreground">Undo</b> ⌘Z · <b className="text-foreground">Nudge</b> arrows
+        </p>
+        <p>
+          <b className="text-foreground">Draw</b> V P R O L T · <b className="text-foreground">Multi-select</b> Shift-click or drag ·{" "}
+          <b className="text-foreground">Grid</b> in the toolbar
         </p>
       </div>
+      <GridSection />
     </>
   );
 }
@@ -186,6 +217,7 @@ function ScreenProps({ screen, project, onPlay }: { screen: Screen; project: Pro
           <ColorField value={screen.background} onChange={(v) => set((s) => void (s.background = v))} />
         </Row>
       </Section>
+      <GridSection />
       <Section title="Prototype">
         <label className="flex items-center gap-2 text-xs">
           <Switch
@@ -213,6 +245,149 @@ function ScreenProps({ screen, project, onPlay }: { screen: Screen; project: Pro
   );
 }
 
+function GridSection() {
+  const grid = useEditor((s) => s.grid);
+  const { setGrid } = useEditor.getState();
+  return (
+    <Section title="Grid">
+      <label className="flex items-center gap-2 text-xs">
+        <Switch checked={grid.visible} onCheckedChange={(c) => setGrid({ visible: c })} />
+        Show grid
+      </label>
+      <label className="flex items-center gap-2 text-xs">
+        <Switch checked={grid.snap} onCheckedChange={(c) => setGrid({ snap: c })} />
+        Snap to grid
+      </label>
+      <Row label="Size">
+        <NumField label="px" min={4} value={grid.size} onChange={(v) => setGrid({ size: v })} />
+      </Row>
+    </Section>
+  );
+}
+
+function AlignBar({ count }: { count: number }) {
+  const { alignSelection, distributeSelection } = useEditor.getState();
+  const btn = (label: string, onClick: () => void, Icon: typeof AlignStartVertical, disabled?: boolean) => (
+    <Button size="icon-xs" variant="ghost" title={label} disabled={disabled} onClick={onClick}>
+      <Icon />
+    </Button>
+  );
+  const align = (edge: AlignEdge, Icon: typeof AlignStartVertical, label: string) => btn(label, () => alignSelection(edge), Icon, count < 2);
+  return (
+    <Section title="Align">
+      <div className="flex flex-wrap gap-0.5">
+        {align("left", AlignStartVertical, "Align left")}
+        {align("center", AlignCenterVertical, "Align center")}
+        {align("right", AlignEndVertical, "Align right")}
+        {align("top", AlignStartHorizontal, "Align top")}
+        {align("middle", AlignCenterHorizontal, "Align middle")}
+        {align("bottom", AlignEndHorizontal, "Align bottom")}
+        {btn("Distribute horizontally", () => distributeSelection("x"), AlignHorizontalSpaceAround, count < 3)}
+        {btn("Distribute vertically", () => distributeSelection("y"), AlignVerticalSpaceAround, count < 3)}
+      </div>
+    </Section>
+  );
+}
+
+function GroupProps({ els }: { els: import("@/lib/model").Element[] }) {
+  const { updateSelected, duplicateSelection, deleteSelection, moveLayer } = useEditor.getState();
+  const box = unionBox(els);
+  const fill = sharedValue(els.map((e) => e.fill)) ?? "";
+  const stroke = sharedValue(els.map((e) => e.stroke ?? "transparent")) ?? "";
+  const strokeWidth = sharedValue(els.map((e) => e.strokeWidth ?? 0));
+  const opacity = sharedValue(els.map((e) => e.opacity));
+  return (
+    <>
+      <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5">
+        <span className="text-xs font-medium">{els.length} selected</span>
+        <Button size="icon-xs" variant="ghost" title="Duplicate (⌘D)" onClick={duplicateSelection}>
+          <Copy />
+        </Button>
+        <Button size="icon-xs" variant="ghost" title="Delete (⌫)" onClick={deleteSelection}>
+          <Trash2 />
+        </Button>
+      </div>
+      <AlignBar count={els.length} />
+      <Section
+        title="Layout"
+        action={
+          <div className="flex">
+            <Button size="icon-xs" variant="ghost" title="Bring to front" onClick={() => moveLayer("top")}>
+              <ArrowUpToLine />
+            </Button>
+            <Button size="icon-xs" variant="ghost" title="Send to back" onClick={() => moveLayer("bottom")}>
+              <ArrowDownToLine />
+            </Button>
+          </div>
+        }
+      >
+        {box && (
+          <>
+            <Row>
+              <NumField
+                label="X"
+                value={box.x}
+                onChange={(v) => {
+                  const dx = v - box.x;
+                  updateSelected((e) => void (e.x += dx));
+                }}
+              />
+              <NumField
+                label="Y"
+                value={box.y}
+                onChange={(v) => {
+                  const dy = v - box.y;
+                  updateSelected((e) => void (e.y += dy));
+                }}
+              />
+            </Row>
+            <Row>
+              <NumField
+                label="W"
+                min={4}
+                value={Math.round(box.width)}
+                onChange={(v) => {
+                  const to = { ...box, width: Math.max(4, v) };
+                  updateSelected((e) => scaleInGroup(e, box, to));
+                }}
+              />
+              <NumField
+                label="H"
+                min={4}
+                value={Math.round(box.height)}
+                onChange={(v) => {
+                  const to = { ...box, height: Math.max(4, v) };
+                  updateSelected((e) => scaleInGroup(e, box, to));
+                }}
+              />
+            </Row>
+          </>
+        )}
+      </Section>
+      <Section title="Appearance">
+        <Row label="Fill">
+          <ColorField value={fill || "#E5E5EA"} onChange={(v) => updateSelected((e) => void (e.fill = v))} />
+        </Row>
+        <Row label="Stroke">
+          <ColorField value={stroke || "#111111"} onChange={(v) => updateSelected((e) => void (e.stroke = v))} />
+        </Row>
+        <Row label="Width">
+          <NumField label="px" min={0} value={strokeWidth ?? 0} onChange={(v) => updateSelected((e) => void (e.strokeWidth = v))} />
+        </Row>
+        <Row label="Opacity">
+          <NumField
+            label="%"
+            min={0}
+            step={5}
+            value={Math.round((opacity ?? 1) * 100)}
+            onChange={(v) => updateSelected((e) => void (e.opacity = Math.min(100, v) / 100))}
+          />
+        </Row>
+      </Section>
+    </>
+  );
+}
+
 /* ------------------------------ Element ------------------------------ */
 
 const WEIGHTS = [
@@ -228,6 +403,7 @@ const ICON_OPTIONS = [{ value: "", label: "None" }, ...ICON_NAMES.map((n) => ({ 
 
 const HAS_TEXT = new Set(["text", "rect", "button", "listrow", "bubble"]);
 const HAS_FONT = new Set(["text", "rect", "button", "listrow", "bubble", "textfield", "textarea", "navbar", "mactitlebar", "messagelist", "tabbar"]);
+const HAS_STROKE = new Set(["rect", "path", "ellipse", "line", "text"]);
 
 function ElementProps({ el, project }: { el: Element; project: Project }) {
   const { updateElement, duplicateSelection, deleteSelection, moveLayer } = useEditor.getState();
@@ -292,6 +468,16 @@ function ElementProps({ el, project }: { el: Element; project: Project }) {
           <Row label={el.type === "toggle" ? "On color" : "Fill"}>
             <ColorField value={el.fill} onChange={(v) => set((e) => void (e.fill = v))} />
           </Row>
+        )}
+        {HAS_STROKE.has(el.type) && (
+          <>
+            <Row label="Stroke">
+              <ColorField value={el.stroke ?? "transparent"} onChange={(v) => set((e) => void (e.stroke = v))} />
+            </Row>
+            <Row label="Width">
+              <NumField label="px" min={0} value={el.strokeWidth ?? 0} onChange={(v) => set((e) => void (e.strokeWidth = Math.max(0, v)))} />
+            </Row>
+          </>
         )}
         <Row label="Radius">
           <NumField label="R" min={0} value={el.radius} onChange={(v) => set((e) => void (e.radius = v))} />
@@ -534,6 +720,19 @@ function TypeSection({ el, project, set, varOptions }: { el: Element; project: P
           <Row label="Title">
             <TextField value={p.title ?? ""} onChange={(v) => prop("title", v)} />
           </Row>
+        </Section>
+      );
+    case "path":
+    case "line":
+      return (
+        <Section title={el.type === "line" ? "Line" : "Path"}>
+          <p className="text-[11px] text-muted-foreground">Vector stroke stored as points in the project JSON. Resize the box to scale it.</p>
+        </Section>
+      );
+    case "ellipse":
+      return (
+        <Section title="Ellipse">
+          <p className="text-[11px] text-muted-foreground">Fits the element box. Use fill and stroke in Appearance.</p>
         </Section>
       );
     case "image":

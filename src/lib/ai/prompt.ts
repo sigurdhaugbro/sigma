@@ -9,10 +9,11 @@ If the instruction is a question or unclear, answer in "summary" and return an e
 - Elements are absolutely positioned in screen pixels (x, y, width, height). Origin is the screen's top-left.
 - iPhone: 393×852. Status bar occupies y 0–54 (add a "statusbar" element at y 0 on every new iPhone screen). A nav bar sits at y 54, height 44. Keep the bottom 34px clear (home indicator). Side margins 16.
 - iPad: 834×1194. Mac window: 1200×760; put a "mactitlebar" at y 0 height 52 on new Mac screens.
+- Canvas: a bezel-less artboard (default 1200×800, any size) for illustration and storyboards. Do not add a status bar, nav bar, home indicator, or device chrome.
 - Later elements in a screen's list draw on top of earlier ones. Add backgrounds first.
 
 ## Element types (field "type") and their "props"
-Common fields: name, x, y, width, height, fill (CSS color), textColor, fontSize, fontWeight (300–800), textAlign (left|center|right), radius, opacity (0–1), text, showIf, hidden, props.
+Common fields: name, x, y, width, height, fill (CSS color), textColor, fontSize, fontWeight (300–800), textAlign (left|center|right), radius, opacity (0–1), text, stroke, strokeWidth, points (path/line), showIf, hidden, props.
 - text: uses text, textColor, fontSize, fontWeight. Text may contain {{variable}} or {{listVar.last}} / {{listVar.count}}.
 - rect: filled rounded rectangle; optional centered text (e.g. avatar initials with radius = width/2).
 - image: placeholder unless the user uploads; props.fit cover|contain.
@@ -27,6 +28,9 @@ Common fields: name, x, y, width, height, fill (CSS color), textColor, fontSize,
 - bubble: one static chat bubble; props.sender me|them; text.
 - messagelist: live chat thread rendering a "messages" variable named in props.variable; bottom-anchored, shows a typing indicator during scripted replies.
 - mactitlebar: traffic lights + props.title.
+- path: freehand vector stroke. points are normalized 0–1 inside the box; use stroke and strokeWidth; fill is usually "transparent".
+- ellipse: oval in the element's box; fill + optional stroke.
+- line: two-point vector. points [{x,y},{x,y}] normalized 0–1; stroke + strokeWidth; fill "transparent".
 Icon names: home, search, settings, compose, plus, arrow-up, video, phone, info, camera, mic, heart, share, bell-off, chevron-left, chevron-right, message, user, star, trash, folder, mail, music, map, calendar, clock, photo, lock, more.
 props.keyboardAware: true makes an element slide up above the on-screen keyboard (use it for chat input bars and their buttons, and on the messagelist so it shrinks).
 
@@ -42,7 +46,7 @@ Interaction: {trigger: "tap"|"submit", action}. Actions:
 A working chat screen = a "messages" variable + messagelist bound to it (keyboardAware) + a textfield bound to a text draft variable (keyboardAware, submit → sendMessage) + a send button (keyboardAware, showIf the draft variable, tap → sendMessage) + 3–5 in-character scripted replies.
 
 ## Operations
-- {"op":"addScreen","id":"new-screen-id","device":"iphone"|"ipad"|"mac","name":"...","background":"#FFFFFF"}  (x/y optional; omit to place it to the right)
+- {"op":"addScreen","id":"new-screen-id","device":"iphone"|"ipad"|"mac"|"canvas","name":"...","background":"#FFFFFF"}  (x/y optional; omit to place it to the right)
 - {"op":"updateScreen","screenId":"...","set":{name?, background?, width?, height?, x?, y?}}
 - {"op":"deleteScreen","screenId":"..."}
 - {"op":"setStartScreen","screenId":"..."}

@@ -98,26 +98,43 @@ export function Editor() {
       } else if (mod && e.key.toLowerCase() === "d") {
         e.preventDefault();
         s.duplicateSelection();
+      } else if (mod && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        s.copySelection();
+      } else if (mod && e.key.toLowerCase() === "x") {
+        e.preventDefault();
+        s.cutSelection();
+      } else if (mod && e.key.toLowerCase() === "v") {
+        e.preventDefault();
+        s.pasteSelection();
       } else if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
         s.deleteSelection();
       } else if (e.key === "Escape") {
-        if (s.elementId) s.select(s.screenId, null);
+        if (s.tool !== "select") s.setTool("select");
+        else if (s.elementIds.length) s.select(s.screenId, null);
         else s.select(null, null);
       } else if (e.shiftKey && (e.key === "!" || e.code === "Digit1")) {
         if (s.project) fitView(s.project, canvasRef.current);
       } else if (mod && e.key === "Enter") {
         e.preventDefault();
         play(s.screenId ?? undefined);
-      } else if (e.key.startsWith("Arrow") && s.elementId) {
+      } else if (e.key.startsWith("Arrow") && s.elementIds.length) {
         e.preventDefault();
-        const step = e.shiftKey ? 10 : 1;
-        s.updateElement(s.elementId, (el) => {
-          if (e.key === "ArrowLeft") el.x -= step;
-          if (e.key === "ArrowRight") el.x += step;
-          if (e.key === "ArrowUp") el.y -= step;
-          if (e.key === "ArrowDown") el.y += step;
-        });
+        const step = e.shiftKey ? (s.grid.snap ? s.grid.size : 10) : 1;
+        const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+        const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+        s.nudgeSelection(dx, dy);
+      } else if (!mod && !e.altKey) {
+        const k = e.key.toLowerCase();
+        if (k === "v") s.setTool("select");
+        else if (k === "p") s.setTool("pen");
+        else if (k === "r") s.setTool("rect");
+        else if (k === "o") s.setTool("ellipse");
+        else if (k === "l") s.setTool("line");
+        else if (k === "t") s.setTool("text");
+        else if (k === "g") s.setGrid({ visible: !s.grid.visible });
+        else if (k === ";") s.setGrid({ snap: !s.grid.snap });
       }
     };
     const up = (e: KeyboardEvent) => {

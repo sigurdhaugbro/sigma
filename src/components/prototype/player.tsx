@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EyeOff, Keyboard, Maximize, MousePointer2, RotateCcw, Smartphone, X } from "lucide-react";
-import { DEVICES, type Element, type Project, type Transition, type VariableValue, uid } from "@/lib/model";
+import { DEVICES, hasDeviceChrome, type Element, type Project, type Transition, type VariableValue, uid } from "@/lib/model";
 import type { Vars } from "@/lib/runtime";
 import { IOSKeyboard, KEYBOARD_HEIGHT, type KeyInput } from "@/components/device/ios-keyboard";
 import { RuntimeContext, type Runtime } from "@/components/device/runtime-context";
@@ -270,13 +270,14 @@ export function Stage({
   };
 
   const fakeKeyboard = phone ? phone.keyboard === "fake" : options.keyboard;
-  const kbVisible = fakeKeyboard && device !== "mac" && !!focused;
+  const framed = hasDeviceChrome(device);
+  const kbVisible = fakeKeyboard && framed && !!focused;
   const dev = DEVICES[device];
-  const bezel = options.bezel && device !== "mac" && !phone ? dev.bezel : 0;
+  const bezel = options.bezel && framed && !phone ? dev.bezel : 0;
   const frameW = current.width + bezel * 2;
   const frameH = current.height + bezel * 2;
   const pad = options.bezel && !phone ? 48 : 0;
-  const crop = phone && device !== "mac" ? phone.cropTop : 0;
+  const crop = phone && framed ? phone.cropTop : 0;
   const scale = Math.min((viewport.w - pad * 2) / frameW, (viewport.h - pad * 2) / (frameH - crop), device === "mac" && options.bezel && !phone ? 1 : 4);
   const nativeOffset = phone?.keyboard === "native" && focused && nativeKb > 0 ? Math.max(0, nativeKb / scale - 52) : 0;
   const keyboardOffset = kbVisible ? KEYBOARD_HEIGHT - 52 : nativeOffset;
@@ -326,7 +327,7 @@ export function Stage({
     return (
       <div key={`${id}-${cls ?? "static"}`} className={cn("absolute inset-0", cls)} style={{ zIndex: z }}>
         <ScreenView screen={s} rounded={false} hardware={false}>
-          {id === current.id && device !== "mac" && fakeKeyboard && <IOSKeyboard visible={kbVisible} onKey={onKey} />}
+          {id === current.id && framed && fakeKeyboard && <IOSKeyboard visible={kbVisible} onKey={onKey} />}
         </ScreenView>
       </div>
     );
