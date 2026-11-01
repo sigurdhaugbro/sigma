@@ -121,7 +121,7 @@ export const OperationSchema = z.discriminatedUnion("op", [
   z.object({
     op: z.literal("addScreen"),
     id: z.string().optional(),
-    device: z.enum(["iphone", "ipad", "mac", "canvas"]).default("iphone"),
+    device: z.enum(["iphone", "ipad", "mac", "canvas", "slide"]).default("iphone"),
     name: z.string(),
     background: z.string().optional(),
     x: num.optional(),

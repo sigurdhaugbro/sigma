@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createSampleProject } from "@/lib/sample";
+import { createSampleDeck, createSampleProject } from "@/lib/sample";
 import { offlinePlan } from "./offline";
 import { applyOperations } from "./ops";
 
@@ -76,6 +76,16 @@ describe("offline fallback", () => {
     const out = run("link Edit to Contact Details", { screenId: list.id, elementId: null }, project)!;
     const edit = out.draft.screens[0].elements.find((e) => e.id === byName("Edit").id)!;
     expect(edit.interactions[0].action).toMatchObject({ type: "navigate", screenId: project.screens[2].id });
+  });
+
+  it("adds a 16:9 slide without device chrome", () => {
+    const project = createSampleDeck();
+    const out = run("add a slide", { screenId: project.screens[0].id, elementId: null }, project)!;
+    const added = out.draft.screens.at(-1)!;
+    expect(added.device).toBe("slide");
+    expect(added.width).toBe(1920);
+    expect(added.height).toBe(1080);
+    expect(added.elements).toEqual([]);
   });
 
   it("returns null for things it can't understand", () => {

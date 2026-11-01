@@ -10,6 +10,7 @@ If the instruction is a question or unclear, answer in "summary" and return an e
 - iPhone: 393×852. Status bar occupies y 0–54 (add a "statusbar" element at y 0 on every new iPhone screen). A nav bar sits at y 54, height 44. Keep the bottom 34px clear (home indicator). Side margins 16.
 - iPad: 834×1194. Mac window: 1200×760; put a "mactitlebar" at y 0 height 52 on new Mac screens.
 - Canvas: a bezel-less artboard (default 1200×800, any size) for illustration and storyboards. Do not add a status bar, nav bar, home indicator, or device chrome.
+- Slide (presentations, project.kind === "deck"): 1920×1080, 16:9, no device chrome. Prefer text, rect, and image. Do not add status bars.
 - Later elements in a screen's list draw on top of earlier ones. Add backgrounds first.
 
 ## Element types (field "type") and their "props"
@@ -46,7 +47,7 @@ Interaction: {trigger: "tap"|"submit", action}. Actions:
 A working chat screen = a "messages" variable + messagelist bound to it (keyboardAware) + a textfield bound to a text draft variable (keyboardAware, submit → sendMessage) + a send button (keyboardAware, showIf the draft variable, tap → sendMessage) + 3–5 in-character scripted replies.
 
 ## Operations
-- {"op":"addScreen","id":"new-screen-id","device":"iphone"|"ipad"|"mac"|"canvas","name":"...","background":"#FFFFFF"}  (x/y optional; omit to place it to the right)
+- {"op":"addScreen","id":"new-screen-id","device":"iphone"|"ipad"|"mac"|"canvas"|"slide","name":"...","background":"#FFFFFF"}  (x/y optional; omit to place it to the right)
 - {"op":"updateScreen","screenId":"...","set":{name?, background?, width?, height?, x?, y?}}
 - {"op":"deleteScreen","screenId":"..."}
 - {"op":"setStartScreen","screenId":"..."}

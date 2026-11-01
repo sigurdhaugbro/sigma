@@ -86,6 +86,12 @@ export function offlinePlan(project: Project, sel: Selection, instruction: strin
   const ops: Operation[] = [];
 
   // Add a screen: "add a settings screen", "add a mac window called Mail"
+  const addSlide = p.match(/\badd (?:an? )?(?:new )?slide\b/);
+  if (addSlide) {
+    const name = quoted(text) ?? text.match(/(?:called|named)\s+(.+)$/i)?.[1] ?? "Slide";
+    return { summary: `Added “${name}”.`, operations: [{ op: "addScreen", id: "new", device: "slide", name }] };
+  }
+
   const addScreen = p.match(/\badd (?:an? )?(?:new )?(?:(iphone|ipad|mac|canvas) )?(?:(.+?) )?(screen|window|canvas)\b/);
   if (addScreen && !(addScreen[2] && TYPE_WORDS.some(([re]) => re.test(addScreen[2])))) {
     const device =

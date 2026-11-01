@@ -15,12 +15,14 @@ import {
   createElement,
   createScreen,
   DEVICES,
+  isDeck,
   type DeviceKind,
   type Element,
   type ElementType,
   type Project,
   type Screen,
 } from "./model";
+import { reorderList } from "./slides";
 
 const HISTORY_LIMIT = 100;
 const PASTE_OFFSET = 16;
@@ -79,6 +81,8 @@ interface EditorState {
   alignSelection: (edge: AlignEdge) => void;
   distributeSelection: (axis: "x" | "y") => void;
   moveLayer: (dir: "up" | "down" | "top" | "bottom") => void;
+  moveSlide: (id: string, dir: "up" | "down") => void;
+  reorderSlides: (from: number, to: number) => void;
 
   tool: EditorTool;
   drawStyle: DrawStyle;
@@ -216,6 +220,25 @@ export const useEditor = create<EditorState>((set, get) => ({
       el.y = Math.round((screen.height - el.height) / 2);
     }
     if (screen.device === "mac" && type === "text") el.fontSize = 13;
+    if (screen.device === "slide") {
+      if (type === "text") {
+        el.fontSize = 48;
+        el.width = 800;
+        el.height = 64;
+        el.x = Math.round((screen.width - el.width) / 2);
+        el.y = Math.round((screen.height - el.height) / 2);
+      } else if (type === "rect") {
+        el.width = 480;
+        el.height = 280;
+        el.x = Math.round((screen.width - el.width) / 2);
+        el.y = Math.round((screen.height - el.height) / 2);
+      } else if (type === "image") {
+        el.width = 960;
+        el.height = 540;
+        el.x = Math.round((screen.width - el.width) / 2);
+        el.y = Math.round((screen.height - el.height) / 2);
+      }
+    }
     get().mutate((d) => {
       d.screens.find((s) => s.id === screen.id)!.elements.push(el);
     });
@@ -232,14 +255,21 @@ export const useEditor = create<EditorState>((set, get) => ({
   },
 
   addScreen: (device) => {
-    const { project } = get();
+    const { project, screenId } = get();
     if (!project) return;
     const maxX = Math.max(0, ...project.screens.map((s) => s.x + s.width));
-    const screen = createScreen(device, { x: project.screens.length ? maxX + 100 : 0, y: 0, name: `${DEVICES[device].label} ${project.screens.length + 1}` });
+    const n = project.screens.length + 1;
+    const screen = createScreen(device, {
+      x: device === "slide" ? 0 : project.screens.length ? maxX + 100 : 0,
+      y: 0,
+      name: device === "slide" ? `Slide ${n}` : `${DEVICES[device].label} ${n}`,
+    });
     if (device === "iphone" || device === "ipad") screen.elements.push(createElement("statusbar", { width: screen.width }));
     else if (device === "mac") screen.elements.push(createElement("mactitlebar", { width: screen.width, props: { title: screen.name } }));
+    const after = screenId ? project.screens.findIndex((s) => s.id === screenId) : -1;
+    const insertAt = device === "slide" && after >= 0 ? after + 1 : project.screens.length;
     get().mutate((d) => {
-      d.screens.push(screen);
+      d.screens.splice(insertAt, 0, screen);
     });
     set({ screenId: screen.id, elementId: null, elementIds: [] });
   },
@@ -278,15 +308,17 @@ export const useEditor = create<EditorState>((set, get) => ({
     } else if (screenId) {
       const s = project.screens.find((x) => x.id === screenId);
       if (!s) return;
+      const idx = project.screens.findIndex((x) => x.id === screenId);
       const copy: Screen = {
         ...structuredClone(s),
         id: createScreen(s.device).id,
         name: `${s.name} copy`,
-        y: s.y + s.height + 120,
+        y: isDeck(project) ? s.y : s.y + s.height + 120,
       };
       copy.elements = copy.elements.map(cloneElement);
       get().mutate((d) => {
-        d.screens.push(copy);
+        if (isDeck(d) && idx >= 0) d.screens.splice(idx + 1, 0, copy);
+        else d.screens.push(copy);
       });
       set({ screenId: copy.id, elementId: null, elementIds: [] });
     }
@@ -361,6 +393,23 @@ export const useEditor = create<EditorState>((set, get) => ({
         rest.splice(idx, 0, ...selected);
         found.screen.elements = rest;
       }
+    });
+  },
+
+  moveSlide: (id, dir) => {
+    const { project } = get();
+    if (!project) return;
+    const from = project.screens.findIndex((s) => s.id === id);
+    const to = dir === "up" ? from - 1 : from + 1;
+    if (from < 0 || to < 0 || to >= project.screens.length) return;
+    get().mutate((d) => {
+      d.screens = reorderList(d.screens, from, to);
+    });
+  },
+
+  reorderSlides: (from, to) => {
+    get().mutate((d) => {
+      d.screens = reorderList(d.screens, from, to);
     });
   },
 }));

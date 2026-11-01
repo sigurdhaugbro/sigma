@@ -420,6 +420,7 @@ export function createSampleProject(): Project {
   return {
     id: uid("prj_"),
     version: 1,
+    kind: "prototype",
     name: "Sample — Messages",
     startScreenId: list.id,
     screens: [list, chat, details, notes, board],
@@ -446,5 +447,230 @@ export function createSampleProject(): Project {
       },
     ],
     updatedAt: now,
+  };
+}
+
+/** A short 16:9 deck used as the slides sample — distinct from app prototypes. */
+export function createSampleDeck(): Project {
+  const title = createScreen("slide", { name: "Title", background: "#0B0C10" });
+  const agenda = createScreen("slide", { name: "Agenda", background: "#111318" });
+  const feature = createScreen("slide", { name: "Present", background: "#111318" });
+  const end = createScreen("slide", { name: "Close", background: "#0B0C10" });
+
+  title.elements.push(
+    createElement("rect", {
+      name: "Accent bar",
+      x: 160,
+      y: 360,
+      width: 72,
+      height: 8,
+      fill: "#F5B942",
+      radius: 4,
+    }),
+    createElement("text", {
+      name: "Eyebrow",
+      text: "SIGMA",
+      x: 160,
+      y: 392,
+      width: 800,
+      height: 36,
+      fontSize: 18,
+      fontWeight: 700,
+      textColor: "#F5B942",
+    }),
+    createElement("text", {
+      name: "Title",
+      text: "Presentations\nfor the set.",
+      x: 160,
+      y: 440,
+      width: 1400,
+      height: 220,
+      fontSize: 88,
+      fontWeight: 700,
+      textColor: "#F5F5F7",
+    }),
+    createElement("text", {
+      name: "Subtitle",
+      text: "16:9 slides. Fullscreen present. Same editor chrome.",
+      x: 160,
+      y: 700,
+      width: 1200,
+      height: 40,
+      fontSize: 24,
+      fontWeight: 400,
+      textColor: "#A1A1AA",
+    }),
+  );
+
+  agenda.elements.push(
+    createElement("text", {
+      name: "Kicker",
+      text: "AGENDA",
+      x: 160,
+      y: 120,
+      width: 400,
+      height: 28,
+      fontSize: 16,
+      fontWeight: 700,
+      textColor: "#F5B942",
+    }),
+    createElement("text", {
+      name: "Heading",
+      text: "What this deck is for",
+      x: 160,
+      y: 168,
+      width: 1400,
+      height: 72,
+      fontSize: 52,
+      fontWeight: 700,
+      textColor: "#F5F5F7",
+    }),
+  );
+
+  const cards: [string, string, string][] = [
+    ["01", "App prototypes", "iPhone and Mac screens that actually work on camera."],
+    ["02", "Slides", "A separate 16:9 deck — no device chrome, just slides."],
+    ["03", "Present", "Fullscreen. Arrows or click to move. Esc to leave."],
+  ];
+  cards.forEach(([num, heading, body], i) => {
+    const x = 160 + i * 560;
+    agenda.elements.push(
+      createElement("rect", {
+        name: `Card ${num}`,
+        x,
+        y: 360,
+        width: 520,
+        height: 480,
+        fill: "#1A1C24",
+        radius: 20,
+      }),
+      createElement("text", {
+        name: `Num ${num}`,
+        text: num,
+        x: x + 36,
+        y: 400,
+        width: 200,
+        height: 40,
+        fontSize: 22,
+        fontWeight: 700,
+        textColor: "#F5B942",
+      }),
+      createElement("text", {
+        name: `Card title ${num}`,
+        text: heading,
+        x: x + 36,
+        y: 500,
+        width: 448,
+        height: 80,
+        fontSize: 32,
+        fontWeight: 700,
+        textColor: "#F5F5F7",
+      }),
+      createElement("text", {
+        name: `Card body ${num}`,
+        text: body,
+        x: x + 36,
+        y: 600,
+        width: 448,
+        height: 140,
+        fontSize: 22,
+        fontWeight: 400,
+        textColor: "#A1A1AA",
+      }),
+    );
+  });
+
+  feature.elements.push(
+    createElement("rect", {
+      name: "Stage",
+      x: 160,
+      y: 200,
+      width: 1600,
+      height: 680,
+      fill: "#1A1C24",
+      radius: 24,
+    }),
+    createElement("text", {
+      name: "Kicker",
+      text: "PRESENT MODE",
+      x: 240,
+      y: 320,
+      width: 600,
+      height: 28,
+      fontSize: 16,
+      fontWeight: 700,
+      textColor: "#38BDF8",
+    }),
+    createElement("text", {
+      name: "Heading",
+      text: "16:9. No chrome.",
+      x: 240,
+      y: 380,
+      width: 1400,
+      height: 90,
+      fontSize: 72,
+      fontWeight: 700,
+      textColor: "#F5F5F7",
+    }),
+    createElement("text", {
+      name: "Body",
+      text: "Arrow keys or click to go next and previous.\nEscape exits. The editor stays out of the way.",
+      x: 240,
+      y: 500,
+      width: 1400,
+      height: 120,
+      fontSize: 28,
+      fontWeight: 400,
+      textColor: "#A1A1AA",
+    }),
+    createElement("text", {
+      name: "Hint",
+      text: "←  previous     next  →",
+      x: 240,
+      y: 720,
+      width: 600,
+      height: 40,
+      fontSize: 22,
+      fontWeight: 600,
+      textColor: "#F5F5F7",
+    }),
+  );
+
+  end.elements.push(
+    createElement("text", {
+      name: "Thanks",
+      text: "Thank you.",
+      x: 160,
+      y: 430,
+      width: 1600,
+      height: 100,
+      fontSize: 80,
+      fontWeight: 700,
+      textColor: "#F5F5F7",
+      textAlign: "center",
+    }),
+    createElement("text", {
+      name: "Credit",
+      text: "Made in Sigma",
+      x: 160,
+      y: 560,
+      width: 1600,
+      height: 40,
+      fontSize: 22,
+      fontWeight: 500,
+      textColor: "#F5B942",
+      textAlign: "center",
+    }),
+  );
+
+  return {
+    id: uid("prj_"),
+    version: 1,
+    kind: "deck",
+    name: "Sample — Presentation",
+    startScreenId: title.id,
+    screens: [title, agenda, feature, end],
+    variables: [],
+    updatedAt: Date.now(),
   };
 }
