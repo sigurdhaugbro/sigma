@@ -20,6 +20,7 @@ interface Backend {
 
 /** Netlify Blobs when deployed on Netlify (serverless, shared across function instances). */
 function netlifyBackend(): Backend | null {
+  if (process.env.NETLIFY !== "true" && process.env.NETLIFY_DEV !== "true") return null;
   try {
     const store = getStore({ name: "sigma-shares", consistency: "strong" });
     return {

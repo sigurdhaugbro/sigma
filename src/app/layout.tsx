@@ -9,6 +9,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 export const metadata: Metadata = {
   title: "Sigma — working app UIs for film & TV",
   description: "Design iPhone and Mac app screens that actually work on camera.",
+  appleWebApp: { capable: true, title: "Sigma", statusBarStyle: "black-translucent" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

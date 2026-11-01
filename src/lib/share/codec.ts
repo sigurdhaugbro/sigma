@@ -1,12 +1,14 @@
 import { deflateSync, inflateSync, strFromU8, strToU8 } from "fflate";
 import { isProject, type Project } from "@/lib/model";
 
+export type { Project };
+
 /**
  * Links that embed the whole project in the URL hash are self-contained: nothing is stored on a
  * server and the hash never reaches it. QR codes stay reliably scannable up to roughly this length,
  * so bigger projects (usually ones with photos) go through the short-link store instead.
  */
-export const MAX_HASH_URL_LENGTH = 1800;
+export const MAX_HASH_URL_LENGTH = 2200;
 
 function toBase64Url(bytes: Uint8Array) {
   let bin = "";
@@ -31,6 +33,6 @@ export function decodeProject(encoded: string): Project {
   return parsed;
 }
 
-export function phonePath(projectId: string) {
-  return `/m/${encodeURIComponent(projectId)}`;
+export function phonePath() {
+  return "/m";
 }

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { ChevronDown, Clapperboard, Download, FilePlus2, Maximize2, Monitor, Play, Plus, Redo2, Smartphone, Sparkles, Tablet, Trash2, Undo2, Upload } from "lucide-react";
+import { PlayOnIPhoneDialog } from "./play-on-iphone";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,9 +24,11 @@ export function Toolbar({ onPlay, onOpenProject, onFit }: { onPlay: () => void; 
   const zoom = useEditor((s) => s.view.zoom);
   const canUndo = useEditor((s) => s.past.length > 0);
   const canRedo = useEditor((s) => s.future.length > 0);
+  const screenId = useEditor((s) => s.screenId);
   const { undo, redo, addScreen, mutate } = useEditor.getState();
   const fileRef = useRef<HTMLInputElement>(null);
   const [recent, setRecent] = useState<ProjectSummary[]>([]);
+  const [iphoneOpen, setIphoneOpen] = useState(false);
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-1 border-b border-border bg-card px-2">
@@ -147,9 +150,13 @@ export function Toolbar({ onPlay, onOpenProject, onFit }: { onPlay: () => void; 
         </Button>
       </div>
 
+      <Button size="sm" variant="outline" onClick={() => setIphoneOpen(true)} title="Play on iPhone">
+        <Smartphone /> <span className="hidden xl:inline">iPhone</span>
+      </Button>
       <Button size="sm" onClick={onPlay} className="bg-sky-500 text-white hover:bg-sky-400" title="Play prototype (⌘Enter)">
         <Play className="fill-current" /> Present
       </Button>
+      <PlayOnIPhoneDialog open={iphoneOpen} onOpenChange={setIphoneOpen} project={project} screenId={screenId ?? undefined} />
     </header>
   );
 }

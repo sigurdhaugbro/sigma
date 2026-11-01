@@ -1,0 +1,15 @@
+# Netlify applies its OpenNext adapter for Next.js automatically. Do not pin
+# @netlify/plugin-nextjs — pinning opts the site out of adapter updates.
+# Route handlers (/api/ai, /api/share, /m/icon) become Netlify Functions.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Share fallback for oversized projects (photos). Hash-encoded links are the
+# primary transport and do not use this store.
+[functions]
+  included_files = []

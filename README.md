@@ -1,6 +1,6 @@
-# Set Screens
+# Sigma
 
-A Figma-style editor for recreating iPhone and Mac app UIs for film and TV sets. The screens do more than look right. In **Present** mode you can type into real text fields, tap buttons to move between screens with iOS-style transitions, flip toggles, and send chat messages that get scripted replies. That makes it usable as playback on a phone or laptop that's on camera.
+A Figma-style editor for recreating iPhone and Mac app UIs for film and TV sets. The screens do more than look right. In **Present** mode you can type into real text fields, tap buttons to move between screens with iOS-style transitions, flip toggles, and send chat messages that get scripted replies. **Play on iPhone** puts the same prototype on a real phone, edge to edge, so you can hold it on camera.
 
 ## Run it
 
@@ -10,7 +10,7 @@ npm run dev        # http://localhost:4317
 npm test           # unit tests, including the Claude integration against mocked API responses
 ```
 
-Projects are stored in your browser's `localStorage`. The first time you open the app, it loads a sample project with an iPhone Messages app and a Mac Notes window. Use **Set Screens menu → Export JSON / Import JSON** to back up a project or move it to another machine.
+Projects are stored in your browser's `localStorage`. The first time you open the app, it loads a sample project with an iPhone Messages app and a Mac Notes window. Use **Sigma menu → Export JSON / Import JSON** to back up a project or move it to another machine. Data saved under the old `setscreens:` keys is migrated automatically.
 
 ## What's in the first slice
 
@@ -39,6 +39,13 @@ Projects are stored in your browser's `localStorage`. The first time you open th
 - An optional on-screen iOS keyboard whose keys type into the focused field. A physical keyboard works too.
 - Controls appear when you move the mouse and fade out on their own: exit (Esc), restart (Shift+R), device frame on/off (turn it off to fill the display edge to edge when filming a real device), keyboard on/off, hide cursor, and fullscreen.
 
+**Play on iPhone** (`/m`)
+- **Play on iPhone** in the editor shows a QR code and a link. Open it in Safari on the phone you'll hold on camera.
+- The player is edge to edge: no device frame, no editor chrome, no pinch-zoom, no rubber-band scroll, no text selection or callouts. It respects the notch / Dynamic Island (`viewport-fit=cover` and safe-area insets) and moves keyboard-aware elements when the iOS keyboard opens.
+- Triple-tap the **top-left** corner to restart. Triple-tap the **top-right** corner for a brief hidden menu (restart, or switch between the real iPhone keyboard and Sigma's on-screen keyboard). Nothing stays on screen for the camera.
+- **Add to Home Screen** in Safari launches it standalone with the prototype's name and an initials icon. After the first load, hash-encoded prototypes keep working offline (service worker).
+- How the link is built: small projects are **deflated into the URL hash**, so the phone never hits a server and the QR is self-contained. That's the primary transport. Projects that are too large for a reliable QR (usually because of photos) are stored for 30 days via `POST /api/share`. On Netlify that store is **Netlify Blobs** (serverless); locally it writes to the temp directory. Hash links do not use the store.
+
 ## Data model
 
 A project is plain JSON (`src/lib/model.ts`):
@@ -50,14 +57,29 @@ Element { id, type, name, x, y, width, height, fill, textColor, font…, text, s
 Interaction { trigger: tap|submit, action: navigate|back|toggleVariable|setVariable|sendMessage }
 ```
 
-The renderer (`src/components/device/`) is the same code in the editor and in Present mode. Only the runtime context changes: a static runtime in the editor, and a live one in Present mode.
+The renderer (`src/components/device/`) is the same code in the editor, Present mode, and the phone player. Only the runtime context changes.
 
-## Later: real apps
+## Later: native apps
 
 The model is meant to make these exports possible later. None of them are built yet:
-- **PWA export**: bundle the player and one project JSON into a static site that can be installed on an iPhone home screen and launched full screen.
 - **Native iPhone app**: map screens to SwiftUI views (a `NavigationStack` for push and modal), elements to SwiftUI primitives, variables to `@State` / `@Observable`, and interactions to actions.
+
+The PWA / home-screen path above is the current way to run a prototype on an iPhone.
+
+## Deploy to Netlify
+
+Sigma is a Next.js 16 app. Netlify's OpenNext adapter is applied automatically — don't pin `@netlify/plugin-nextjs`. Route handlers (`/api/ai`, `/api/share`, `/m/icon`) run as Netlify Functions. The share fallback uses Netlify Blobs when `NETLIFY=true`; oversized projects still work.
+
+1. Push this repo to GitHub.
+2. In [Netlify](https://app.netlify.com): **Add new site → Import an existing project** and pick the GitHub repo.
+3. Build settings (also in `netlify.toml`):
+   - **Build command:** `npm run build`
+   - **Publish directory:** `.next`
+   - **Node version:** `22`
+4. Deploy. No environment variables are required. AI keys are pasted in the browser and sent per request; they are never stored on the server.
+
+A Claude.ai subscription still doesn't include API access. For the AI tab, each user pastes their own key from [console.anthropic.com](https://console.anthropic.com/settings/keys).
 
 ## Stack
 
-Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui (Base UI), zustand + immer for editor state and undo history, zod for validating AI operations, vitest, and lucide icons. The only server code is the AI proxy route; there is no database.
+Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui (Base UI), zustand + immer for editor state and undo history, zod for validating AI operations, vitest, lucide icons, fflate + qrcode for phone sharing, and `@netlify/blobs` for the oversized-project fallback. There is no database.
