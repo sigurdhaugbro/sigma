@@ -9,7 +9,7 @@ import { currentProjectId, listProjects, loadProject, saveProject } from "@/lib/
 import { useEditor } from "@/lib/store";
 import { Canvas, fitView } from "./canvas";
 import { LeftPanel } from "./left-panel";
-import { PropertiesPanel } from "./properties-panel";
+import { RightPanel, type RightTab } from "./right-panel";
 import { Toolbar } from "./toolbar";
 
 function isTyping(target: EventTarget | null) {
@@ -23,6 +23,8 @@ export function Editor() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [spaceDown, setSpaceDown] = useState(false);
   const [needsFit, setNeedsFit] = useState(true);
+  const [rightTab, setRightTab] = useState<RightTab>("design");
+  const [aiFocus, setAiFocus] = useState(0);
 
   useEffect(() => {
     const id = currentProjectId();
@@ -72,9 +74,15 @@ export function Editor() {
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setRightTab("ai");
+        setAiFocus((n) => n + 1);
+        return;
+      }
       if (isTyping(e.target)) return;
       const s = useEditor.getState();
-      const mod = e.metaKey || e.ctrlKey;
       if (e.code === "Space") {
         e.preventDefault();
         setSpaceDown(true);
@@ -138,7 +146,13 @@ export function Editor() {
           <Canvas containerRef={canvasRef} spaceDown={spaceDown} />
         </main>
         <div className="hidden lg:flex">
-          <PropertiesPanel onPlay={play} />
+          <RightPanel
+            tab={rightTab}
+            onTab={setRightTab}
+            onPlay={play}
+            onFit={() => fitView(useEditor.getState().project!, canvasRef.current)}
+            aiFocusSignal={aiFocus}
+          />
         </div>
       </div>
     </div>

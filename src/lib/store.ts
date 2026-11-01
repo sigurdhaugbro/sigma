@@ -33,6 +33,8 @@ interface EditorState {
 
   load: (p: Project) => void;
   mutate: (fn: (draft: Project) => void) => void;
+  /** Replaces the project as a single undo step. */
+  commit: (next: Project) => void;
   beginTx: () => void;
   endTx: () => void;
   undo: () => void;
@@ -78,6 +80,12 @@ export const useEditor = create<EditorState>((set, get) => ({
     if (next === project) return;
     if (txSnapshot) set({ project: next });
     else set({ project: next, past: [...past, project].slice(-HISTORY_LIMIT), future: [] });
+  },
+
+  commit: (next) => {
+    const { project, past } = get();
+    if (!project) return;
+    set({ project: { ...next, updatedAt: Date.now() }, past: [...past, project].slice(-HISTORY_LIMIT), future: [], ...validSelection(next, get()) });
   },
 
   beginTx: () => set({ txSnapshot: get().project }),

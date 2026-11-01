@@ -28,7 +28,7 @@ export function PropertiesPanel({ onPlay }: { onPlay: (screenId?: string) => voi
   const screen = project.screens.find((s) => s.id === screenId);
 
   return (
-    <aside className="flex h-full w-72 shrink-0 flex-col border-l border-border bg-card">
+    <div className="flex h-full flex-col">
       <ScrollArea className="min-h-0 flex-1">
         {found ? (
           <ElementProps el={found.el} project={project} />
@@ -38,7 +38,7 @@ export function PropertiesPanel({ onPlay }: { onPlay: (screenId?: string) => voi
           <ProjectProps project={project} />
         )}
       </ScrollArea>
-    </aside>
+    </div>
   );
 }
 

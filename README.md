@@ -7,6 +7,7 @@ A Figma-style editor for recreating iPhone and Mac app UIs for film and TV sets.
 ```bash
 npm install
 npm run dev        # http://localhost:4317
+npm test           # unit tests, including the Claude integration against mocked API responses
 ```
 
 Projects are stored in your browser's `localStorage`. The first time you open the app, it loads a sample project with an iPhone Messages app and a Mac Notes window. Use **Set Screens menu → Export JSON / Import JSON** to back up a project or move it to another machine.
@@ -25,6 +26,13 @@ Projects are stored in your browser's `localStorage`. The first time you open th
 - Interactions run **on tap**, or **on return** for text fields. The available actions are *Go to screen* (push, modal, fade, or instant), *Go back*, *Toggle variable*, *Set variable*, and *Send message*. Send message appends the typed text to a message list, clears the field, and can play scripted replies with a typing indicator.
 - **Show if** hides an element unless a variable is set. For example, the Send button only appears once something has been typed.
 - **Keyboard-aware** elements slide up above the on-screen iOS keyboard.
+
+**AI assistant** (the **AI** tab in the right panel, or ⌘K)
+- Describe what you want in plain English, e.g. “make a WhatsApp-style chat screen with contact Anna”, “make the send button blue”, or “add a settings screen linked from the gear icon”. The assistant creates and edits screens, elements, variables and interactions, not just how things look.
+- Claude (Anthropic) is the default provider, with a Claude Sonnet model preselected. OpenAI is available as an alternative. Claude needs an API key from [console.anthropic.com](https://console.anthropic.com/settings/keys); a Claude.ai subscription doesn't include API access. To connect, paste the key into the AI tab. You can change the model in AI settings, or use **Load from key** to list the models your key can use.
+- **No API calls are made until a key is saved.** Without a key, a small set of offline rules handles simple commands: recolor, change text, add a screen or element, link an element to a screen, and delete.
+- How it works: the editor sends the project JSON (with image data removed), the current selection and your instruction to `POST /api/ai`. That route forwards them to the provider using the key sent with the request; the key is never stored on the server. The model replies with structured operations (`addScreen`, `addElement`, `updateElement`, `addInteraction`, `setVariable`, …). Each operation is checked against a zod schema in `src/lib/ai/ops.ts`, and invalid ones are skipped and reported. The rest are applied as **one undo step**, and the chat lists exactly what changed.
+- The AI panel doesn't appear in Present mode.
 
 **Present mode** (`/play?id=…&screen=…`)
 - A full-screen device mockup with no editor UI. Everything on the screen is live.
@@ -52,4 +60,4 @@ The model is meant to make these exports possible later. None of them are built 
 
 ## Stack
 
-Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui (Base UI), zustand + immer for editor state and undo history, and lucide icons. There is no backend.
+Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui (Base UI), zustand + immer for editor state and undo history, zod for validating AI operations, vitest, and lucide icons. The only server code is the AI proxy route; there is no database.
