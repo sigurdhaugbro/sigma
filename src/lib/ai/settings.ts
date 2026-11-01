@@ -1,3 +1,5 @@
+import { migrateLegacyStorage } from "@/lib/storage";
+
 export type Provider = "openai" | "anthropic";
 
 export interface AiSettings {
@@ -16,7 +18,7 @@ export const MODEL_SUGGESTIONS: Record<Provider, string[]> = {
 
 export const PROVIDER_LABELS: Record<Provider, string> = { anthropic: "Claude (Anthropic)", openai: "OpenAI" };
 
-const KEY = "setscreens:ai";
+const KEY = "sigma:ai";
 
 export const DEFAULT_AI_SETTINGS: AiSettings = {
   provider: "anthropic",
@@ -25,6 +27,7 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
 };
 
 export function loadAiSettings(): AiSettings {
+  migrateLegacyStorage();
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) ?? "null");
     if (!raw) return DEFAULT_AI_SETTINGS;

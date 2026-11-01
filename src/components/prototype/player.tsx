@@ -115,7 +115,26 @@ function initialVars(project: Project): Vars {
   return Object.fromEntries(project.variables.map((v) => [v.name, structuredClone(v.initial)]));
 }
 
-function Stage({ project, startScreenId, options }: { project: Project; startScreenId: string; options: PlayerOptions }) {
+export interface PhoneOptions {
+  /** "fake" draws the built-in iOS keyboard and suppresses the native one. */
+  keyboard: "fake" | "native";
+  /** Show the design's status bar; off by default because the real phone draws its own. */
+  showStatusBar: boolean;
+  /** Design pixels hidden under an opaque system status bar (light-content mode). */
+  cropTop: number;
+}
+
+export function Stage({
+  project,
+  startScreenId,
+  options,
+  phone,
+}: {
+  project: Project;
+  startScreenId: string;
+  options: Pick<PlayerOptions, "bezel" | "keyboard">;
+  phone?: PhoneOptions;
+}) {
   const screens = useMemo(() => new Map(project.screens.map((s) => [s.id, s])), [project]);
   const [stack, setStack] = useState<StackEntry[]>([{ id: startScreenId, via: "none" }]);
   const [anim, setAnim] = useState<Anim | null>(null);
@@ -128,6 +147,7 @@ function Stage({ project, startScreenId, options }: { project: Project; startScr
   const replyIndex = useRef<Record<string, number>>({});
   const timers = useRef<number[]>([]);
   const [viewport, setViewport] = useState({ w: 1200, h: 800 });
+  const [nativeKb, setNativeKb] = useState(0);
 
   useEffect(() => {
     const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
@@ -139,6 +159,22 @@ function Stage({ project, startScreenId, options }: { project: Project; startScr
       pending.forEach((t) => window.clearTimeout(t));
     };
   }, []);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!phone || phone.keyboard !== "native" || !vv) return;
+    // iOS shrinks only the visual viewport for the keyboard; keep the layout pinned and measure the gap.
+    const onChange = () => {
+      setNativeKb(Math.max(0, window.innerHeight - vv.height));
+      if (window.scrollY || vv.offsetTop) window.scrollTo(0, 0);
+    };
+    vv.addEventListener("resize", onChange);
+    vv.addEventListener("scroll", onChange);
+    return () => {
+      vv.removeEventListener("resize", onChange);
+      vv.removeEventListener("scroll", onChange);
+    };
+  }, [phone]);
 
   const later = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms));
 
@@ -233,11 +269,22 @@ function Stage({ project, startScreenId, options }: { project: Project; startScr
     }
   };
 
-  const kbVisible = options.keyboard && device !== "mac" && !!focused;
-  const keyboardOffset = kbVisible ? KEYBOARD_HEIGHT - 52 : 0;
+  const fakeKeyboard = phone ? phone.keyboard === "fake" : options.keyboard;
+  const kbVisible = fakeKeyboard && device !== "mac" && !!focused;
+  const dev = DEVICES[device];
+  const bezel = options.bezel && device !== "mac" && !phone ? dev.bezel : 0;
+  const frameW = current.width + bezel * 2;
+  const frameH = current.height + bezel * 2;
+  const pad = options.bezel && !phone ? 48 : 0;
+  const crop = phone && device !== "mac" ? phone.cropTop : 0;
+  const scale = Math.min((viewport.w - pad * 2) / frameW, (viewport.h - pad * 2) / (frameH - crop), device === "mac" && options.bezel && !phone ? 1 : 4);
+  const nativeOffset = phone?.keyboard === "native" && focused && nativeKb > 0 ? Math.max(0, nativeKb / scale - 52) : 0;
+  const keyboardOffset = kbVisible ? KEYBOARD_HEIGHT - 52 : nativeOffset;
 
   const runtime: Runtime = {
     live: true,
+    suppressNativeKeyboard: !!phone && phone.keyboard === "fake",
+    hideStatusBar: !!phone && !phone.showStatusBar,
     vars,
     keyboardOffset,
     typing,
@@ -273,20 +320,13 @@ function Stage({ project, startScreenId, options }: { project: Project; startScr
     else fire(focused, "submit");
   };
 
-  const dev = DEVICES[device];
-  const bezel = options.bezel && device !== "mac" ? dev.bezel : 0;
-  const frameW = current.width + bezel * 2;
-  const frameH = current.height + bezel * 2;
-  const pad = options.bezel ? 48 : 0;
-  const scale = Math.min((viewport.w - pad * 2) / frameW, (viewport.h - pad * 2) / frameH, device === "mac" && options.bezel ? 1 : 4);
-
   const layer = (id: string, cls?: string, z = 1) => {
     const s = screens.get(id);
     if (!s) return null;
     return (
       <div key={`${id}-${cls ?? "static"}`} className={cn("absolute inset-0", cls)} style={{ zIndex: z }}>
         <ScreenView screen={s} rounded={false} hardware={false}>
-          {id === current.id && device !== "mac" && <IOSKeyboard visible={kbVisible} onKey={onKey} />}
+          {id === current.id && device !== "mac" && fakeKeyboard && <IOSKeyboard visible={kbVisible} onKey={onKey} />}
         </ScreenView>
       </div>
     );
@@ -303,21 +343,22 @@ function Stage({ project, startScreenId, options }: { project: Project; startScr
   } else layers = layer(current.id);
 
   const screenBox = (
-    <div className="relative overflow-hidden" style={{ width: current.width, height: current.height, borderRadius: options.bezel ? dev.radius : 0, background: current.background }}>
+    <div className="relative overflow-hidden" style={{ width: current.width, height: current.height, borderRadius: bezel ? dev.radius : 0, background: current.background }}>
       <RuntimeContext.Provider value={runtime}>{layers}</RuntimeContext.Provider>
-      <HardwareOverlays device={device} />
+      {!phone && <HardwareOverlays device={device} />}
     </div>
   );
 
   return (
     <div
-      className={cn("flex h-full w-full items-center justify-center", device === "mac" && options.bezel && "mac-desktop")}
+      className={cn("flex h-full w-full items-center justify-center", device === "mac" && options.bezel && !phone && "mac-desktop")}
+      style={phone ? { background: current.background } : undefined}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) (document.activeElement as HTMLElement | null)?.blur?.();
       }}
     >
-      <div style={{ width: frameW * scale, height: frameH * scale }}>
-        <div style={{ width: frameW, height: frameH, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+      <div style={{ width: frameW * scale, height: (frameH - crop) * scale, overflow: crop ? "hidden" : undefined }}>
+        <div style={{ width: frameW, height: frameH, transform: `translateY(${-crop * scale}px) scale(${scale})`, transformOrigin: "top left" }}>
           {bezel ? (
             <div className="device-bezel relative" style={{ width: frameW, height: frameH, padding: bezel, borderRadius: dev.radius + bezel }}>
               {screenBox}

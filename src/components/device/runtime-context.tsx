@@ -6,6 +6,10 @@ import type { Vars } from "@/lib/runtime";
 
 export interface Runtime {
   live: boolean;
+  /** Phone player with the built-in keyboard: stop iOS from also opening its own. */
+  suppressNativeKeyboard?: boolean;
+  /** Phone player: the real device draws the status bar. */
+  hideStatusBar?: boolean;
   vars: Vars;
   /** Pixels the on-screen keyboard currently covers (keyboard-aware elements move up). */
   keyboardOffset: number;

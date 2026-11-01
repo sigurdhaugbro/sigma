@@ -1,8 +1,32 @@
 import { isProject, type Project } from "./model";
 
-const INDEX_KEY = "setscreens:index";
-const PROJECT_KEY = (id: string) => `setscreens:project:${id}`;
-const CURRENT_KEY = "setscreens:current";
+const PREFIX = "sigma:";
+const LEGACY_PREFIX = "setscreens:";
+const INDEX_KEY = `${PREFIX}index`;
+const PROJECT_KEY = (id: string) => `${PREFIX}project:${id}`;
+const CURRENT_KEY = `${PREFIX}current`;
+
+let migrated = false;
+
+/** Moves data saved before the app was renamed to Sigma ("setscreens:*" keys) to the new keys. */
+export function migrateLegacyStorage() {
+  if (migrated || typeof localStorage === "undefined") return;
+  migrated = true;
+  try {
+    const legacy: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(LEGACY_PREFIX)) legacy.push(k);
+    }
+    for (const k of legacy) {
+      const next = PREFIX + k.slice(LEGACY_PREFIX.length);
+      if (localStorage.getItem(next) === null) localStorage.setItem(next, localStorage.getItem(k)!);
+      localStorage.removeItem(k);
+    }
+  } catch {
+    // Storage full or unavailable: leave legacy keys in place and keep going.
+  }
+}
 
 export interface ProjectSummary {
   id: string;
@@ -11,6 +35,7 @@ export interface ProjectSummary {
 }
 
 export function listProjects(): ProjectSummary[] {
+  migrateLegacyStorage();
   try {
     return JSON.parse(localStorage.getItem(INDEX_KEY) ?? "[]");
   } catch {
@@ -19,6 +44,7 @@ export function listProjects(): ProjectSummary[] {
 }
 
 export function loadProject(id: string): Project | null {
+  migrateLegacyStorage();
   try {
     const raw = localStorage.getItem(PROJECT_KEY(id));
     if (!raw) return null;
@@ -49,6 +75,7 @@ export function deleteProject(id: string) {
 }
 
 export function currentProjectId(): string | null {
+  migrateLegacyStorage();
   return localStorage.getItem(CURRENT_KEY);
 }
 
@@ -57,7 +84,7 @@ export function downloadProject(project: Project) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${project.name.replace(/[^\w\- ]+/g, "").trim() || "project"}.setscreens.json`;
+  a.download = `${project.name.replace(/[^\w\- ]+/g, "").trim() || "project"}.sigma.json`;
   a.click();
   URL.revokeObjectURL(url);
 }

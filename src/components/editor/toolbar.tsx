@@ -32,7 +32,7 @@ export function Toolbar({ onPlay, onOpenProject, onFit }: { onPlay: () => void; 
       <DropdownMenu onOpenChange={(open) => open && setRecent(listProjects())}>
         <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="gap-1.5 font-semibold" />}>
           <Clapperboard className="text-amber-400" />
-          <span className="hidden sm:inline">Set Screens</span>
+          <span className="hidden sm:inline">Sigma</span>
           <ChevronDown className="opacity-60" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64">
@@ -105,7 +105,7 @@ export function Toolbar({ onPlay, onOpenProject, onFit }: { onPlay: () => void; 
             onOpenProject(p);
             toast.success(`Imported “${p.name}”`);
           } catch {
-            toast.error("That file isn't a Set Screens project.");
+            toast.error("That file isn't a Sigma project.");
           }
         }}
       />

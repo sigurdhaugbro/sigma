@@ -18,7 +18,7 @@ function textStyle(el: Element): CSSProperties {
 
 export function ElementView({ el }: { el: Element }) {
   const rt = useRuntime();
-  if (el.hidden) return null;
+  if (el.hidden || (rt.hideStatusBar && el.type === "statusbar")) return null;
   const visible = isVisible(el, rt.vars);
   // In the editor, conditionally hidden elements stay visible (dimmed) so they can be edited.
   if (!visible && rt.live) return null;
@@ -179,6 +179,7 @@ function FieldEl({ el }: { el: Element }) {
             }
           }}
           data-field-id={el.id}
+          inputMode={rt.suppressNativeKeyboard ? "none" : undefined}
           autoComplete="off"
           spellCheck={false}
         />
@@ -207,6 +208,7 @@ function AreaEl({ el }: { el: Element }) {
           onFocus={() => rt.focusField(el)}
           onBlur={() => rt.focusField(null)}
           data-field-id={el.id}
+          inputMode={rt.suppressNativeKeyboard ? "none" : undefined}
           spellCheck={false}
         />
       ) : (

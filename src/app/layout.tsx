@@ -7,7 +7,7 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Set Screens — fake-but-working app UIs for film & TV",
+  title: "Sigma — working app UIs for film & TV",
   description: "Design iPhone and Mac app screens that actually work on camera.",
 };
 
